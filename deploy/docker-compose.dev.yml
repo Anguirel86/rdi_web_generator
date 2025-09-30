@@ -1,0 +1,18 @@
+# Development/testing configuration for the RDI web container
+
+
+---
+version: '3.8'
+
+services:
+  web-generator:
+    build:
+      context: ../
+      dockerfile: deploy/Dockerfile
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ../ct.sfc:/home/rdi/web/ct.sfc
+    ports:
+      - 8000:8000
+    env_file:
+      - ./env.dev

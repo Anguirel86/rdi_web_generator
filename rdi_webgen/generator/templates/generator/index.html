@@ -32,7 +32,7 @@
 
         <div>
             <!-- Generator form -->
-            <form name="gen_form" id="gen_form" action="{% url 'generator:generate %}" target="_blank" method="post" enctype="multipart/form-data">
+            <form name="gen_form" id="gen_form" action="{% url 'generator:generate' %}" target="_blank" method="post" enctype="multipart/form-data">
                 {% csrf_token %}
                 
                 <div class="form-group">

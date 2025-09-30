@@ -20,6 +20,7 @@ from ctrando.arguments import tomloptions
 
 
 # standard lib imports
+from zipfile import ZipFile
 import io
 import tomllib
 
@@ -63,17 +64,37 @@ class GenerateView(FormView):
             ct_rom, settings, config)
 
         # Create a patch file
-        patch_data = io.BytesIO()
-        block_size = (len(ct_rom), + len(out_rom) // 100000 + 1)
-        iterable = diff_bytearrays(block_size, ct_rom, out_rom)
-        write_bps(bps_progress(iterable), patch_data)
+        # python-bps is insanely slow.
+        # TODO: use flips external call? yuck, but maybe necessary.
+        # patch_data = io.BytesIO()
+        # block_size = len(ct_rom.getbuffer()) + \
+        #    len(out_rom.getbuffer()) // 100000 + 1
+        # iterable = diff_bytearrays(
+        #    block_size, memoryview(ct_rom.getbuffer()).tobytes(),
+        #    memoryview(out_rom.getbuffer()).tobytes())
+        # write_bps(bps_progress(iterable), patch_data)
 
-        # TODO: Pack the patch in a zip with the spoiler log
-        content = FileWrapper(patch_data)
+        # Get the spoiler log
+        spoiler_file = io.StringIO()
+        ctrando.randomizer.write_spoilers_to_file(
+            settings, config, spoiler_file)
+
+        # Create a zip file with the patch and spoiler log
+        zip_buf = io.BytesIO()
+
+        with ZipFile(zip_buf, 'w') as zip_file:
+            zip_file.writestr('ct-mod.sfc', out_rom.getbuffer())
+            zip_file.writestr('ct-mod-spoilers.txt', spoiler_file.getvalue())
+            content_size = len(zip_buf.getvalue())
+            print(f'Content size: {content_size}')
+
+        zip_buf.seek(0)
+
+        content = FileWrapper(zip_buf)
         response = HttpResponse(
             content, content_type='application/octet-stream')
-        response['Content-Length'] = len(patch_data)
-        response['Content-Disposition'] = 'attachment; filename=ct.bps'
+        response['Content-Length'] = content_size
+        response['Content-Disposition'] = 'attachment; filename=ct-mod.zip'
 
         return response
 
