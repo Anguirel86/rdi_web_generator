@@ -8,23 +8,16 @@ from django.views.generic import FormView
 
 from .forms import GeneratorForm
 
-
-# bps patch imports
-from bps.diff import diff_bytearrays
-from bps.io import write_bps
-from bps.util import bps_progress
-
 # RDI rando imports
 import ctrando.randomizer
 from ctrando.arguments import tomloptions
 
-
 # standard lib imports
 from zipfile import ZipFile
 import io
+import os
+import tempfile
 import tomllib
-
-# Create your views here.
 
 
 class IndexView(View):
@@ -65,14 +58,14 @@ class GenerateView(FormView):
 
         # Create a patch file
         # python-bps is insanely slow.
-        # TODO: use flips external call? yuck, but maybe necessary.
-        # patch_data = io.BytesIO()
-        # block_size = len(ct_rom.getbuffer()) + \
-        #    len(out_rom.getbuffer()) // 100000 + 1
-        # iterable = diff_bytearrays(
-        #    block_size, memoryview(ct_rom.getbuffer()).tobytes(),
-        #    memoryview(out_rom.getbuffer()).tobytes())
-        # write_bps(bps_progress(iterable), patch_data)
+        temp_file = tempfile.NamedTemporaryFile()
+        bps_file_name = f'{temp_file.file.name}.bps'
+        try:
+            temp_file.write(out_rom.getbuffer())
+            os.system(
+                f'flips --create ct.sfc {temp_file.file.name} {bps_file_name}')
+        except Exception:
+            return render(self.request, 'generator/error.html', status=404)
 
         # Get the spoiler log
         spoiler_file = io.StringIO()
@@ -83,17 +76,18 @@ class GenerateView(FormView):
         zip_buf = io.BytesIO()
 
         with ZipFile(zip_buf, 'w') as zip_file:
-            zip_file.writestr('ct-mod.sfc', out_rom.getbuffer())
+            # zip_file.writestr('ct-mod.sfc', out_rom.getbuffer())
+            zip_file.write(bps_file_name, 'ct-mod.bps')
             zip_file.writestr('ct-mod-spoilers.txt', spoiler_file.getvalue())
-            content_size = len(zip_buf.getvalue())
-            print(f'Content size: {content_size}')
+
+        # Clean up the temporary BPS file
+        os.remove(bps_file_name)
 
         zip_buf.seek(0)
 
         content = FileWrapper(zip_buf)
         response = HttpResponse(
             content, content_type='application/octet-stream')
-        response['Content-Length'] = content_size
         response['Content-Disposition'] = 'attachment; filename=ct-mod.zip'
 
         return response

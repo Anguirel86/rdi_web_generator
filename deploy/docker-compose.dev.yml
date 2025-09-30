@@ -1,11 +1,7 @@
 # Development/testing configuration for the RDI web container
-
-
 ---
-version: '3.8'
-
 services:
-  web-generator:
+  rdi-web-generator:
     build:
       context: ../
       dockerfile: deploy/Dockerfile
