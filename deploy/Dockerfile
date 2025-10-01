@@ -50,6 +50,7 @@ RUN pip install --no-cache /wheels/*
 
 #  Copy the webapp files over to the container
 COPY ./rdi_webgen .
+COPY ./deploy/entrypoint.sh .
 
 RUN chown -R rdi:rdi $APP_HOME
 
@@ -58,3 +59,5 @@ RUN apk update && apk add bash
 
 # Switch to the webapp user
 USER rdi
+
+ENTRYPOINT ["/home/rdi/web/entrypoint.sh"]
