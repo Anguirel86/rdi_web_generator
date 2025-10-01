@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <!-- TODO: Bunch of imports here -->
+    </head>
+
+    <body>
+        <!-- Main form div -->
+        <div class="container">
+            <form name="toml_gen_form" id="toml_gen_form" action="{% url 'generator:generate_toml' %}" method="post" enctype="multipart/form-data" onsubmit="prepareform()">
+                {% csrf_token %}
+
+                <!-- The nav tabs are auto-generated -->
+                <ul class="nav nav-tabs">
+                    {% include "generator/toml_gen/settings_nav_tabs.html" %}
+                </ul>
+
+                <!-- The individual tab template pages are auto-generated -->
+                <div class="tab-content">
+                    {% include "generator/toml_gen/settings_tab_pages.html" %}
+                </div>
+
+                <!-- form submission and manual elements -->
+                <div class="border border-primary rounded p-2 mb-3">
+                    <div class="form-group">
+                        <input class="btn btn-primary" type="submit" value="Generate settings file"/>
+                    </div>
+                </div>
+
+            </form> <!-- end toml generate form -->
+        </div> <!-- end main container div -->
+    </body>
+</html>
+

@@ -9,10 +9,12 @@ from django.views.generic import FormView
 from .forms import GeneratorForm
 
 # RDI rando imports
+import ctrando
 import ctrando.randomizer
 from ctrando.arguments import tomloptions
 
 # standard lib imports
+from importlib import resources as impres
 from zipfile import ZipFile
 import io
 import os
@@ -42,8 +44,37 @@ class GenerateView(FormView):
 
     def form_valid(self, form):
 
-        # Get the settings file from the form
-        buf = io.BytesIO(self.request.FILES['settings_file'].read())
+        # Check is the user selected a preset or uploaded a file
+        if len(self.request.FILES) == 0:
+            # Preset file
+            preset_name = form.cleaned_data['preset_file']
+            if preset_name == '':
+                # User must provide either a preset name or a settings file
+                context = {
+                    'form': form,
+                    'error_text': f'Select a preset or a custom settings file: {preset_name}'
+                }
+                return render(self.request, 'generator/index.html', context)
+
+            # Read the preset file from the ctrando package
+            preset_file_path = impres.files(
+                ctrando) / f'presets/{preset_name}.toml'
+            if not os.path.isfile(preset_file_path):
+                context = {
+                    'form': form,
+                    'error_text': f'Invalid preset file: {preset_name}.toml'
+                }
+                return render(self.request, 'generator/index.html', context)
+
+            # Preset file exists, read it in
+            with open(preset_file_path, 'rb') as f:
+                buf = io.BytesIO(f.read())
+
+        else:
+            # Custom settings file
+            # Get the settings file from the form
+            buf = io.BytesIO(self.request.FILES['settings_file'].read())
+
         toml_dict = tomllib.load(buf)
         toml_dict['input_file'] = './ct.sfc'  # TODO: Needed?
 
@@ -104,9 +135,8 @@ class GenerateView(FormView):
         return response
 
     def form_invalid(self, form):
-        # TODO: Real error page
         context = {
             'form': form,
-            'error_text': 'Provide a settings TOML file below'
+            'error_text': 'Choose a preset or upload a settings file.'
         }
         return render(self.request, 'generator/index.html', context)
