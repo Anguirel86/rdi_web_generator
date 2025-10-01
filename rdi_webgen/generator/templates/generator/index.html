@@ -21,27 +21,52 @@
               settings file templates
             Form with box for settings file
         -->
-        <div>
-            <!-- Introduction text -->
-            <p>Rando Dalton Imperial (RDI) is an open world Chrono Trigger randomizer that seeks to preserve as much of the vanilla gameplay as possible.</p>
-        </div>
+        <div class="container pt-3">
+            <div class="card mb-3">
+                <h4 class="card-header">Rando Dalton Imperial</h4>
+                <p class="card-text p-4">
+                    Rando Dalton Imperial (RDI) is an open world randomizer for Chrono Trigger.  This randomizer is heavily influenced by previous open world randomizers for Chrono Trigger, both Jets of Time and Wings of Time before it.  While those randomizers take liberties with the gameplay to provide a tight racing experience, this randomizer’s goal is to preserve as much of the vanilla gameplay experience as possible.
+                </p>
+            </div>
 
-        <div>
-            <!-- Links to stuff -->
-        </div>
+            <!-- Display any errors from a previous generation attempt -->
+            <div>
+                <h3 style="color: red">{{error_text}}</h3>
+            </div>
 
-        <div>
-            <!-- Generator form -->
-            <form name="gen_form" id="gen_form" action="{% url 'generator:generate' %}" target="_blank" method="post" enctype="multipart/form-data">
-                {% csrf_token %}
-                
-                <div class="form-group">
-                    <label class="form-label" for="{{form.settings_file.id_for_label}}">Settings file</label>
-                    <input type="file" class="form-control" id="{{form.settings_file.id_for_label}}" name="{{form.settings_file.name}}"/>
+            <div class="card mb-3">
+                <h4 class="card-header">Get started</h4>
+                <div>
+                    <h5 class="card-header">Get a settings file</h5>
+                    <p class="card-text p-4"><a href="https://github.com/Pseudoarc/ctrando/tree/main/settings">Download a sample settings file and modify settings to taste</a></p>
                 </div>
-                <button class="btn btn-primary" type="submit">Download Patch</button>
-            </form>
-        </div>
+                <div>
+                    <h5 class="card-header">Generate a seed</h5>
+                    <form name="gen_form" id="gen_form" action="{% url 'generator:generate' %}" target="_blank" method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
 
+                        <div class="form-group">
+                            <label class="form-label pl-4 pt-4" for="{{form.settings_file.id_for_label}}">Upload a settings (.toml) file to generate a patch file</label>
+                            <input type="file" class="form-control" id="{{form.settings_file.id_for_label}}" name="{{form.settings_file.name}}"/>
+                        </div>
+                        <button class="btn btn-primary" type="submit">Download Patch</button>
+                    </form>
+                </div>
+                <div>
+                    <h5 class="card-header">Play your seed</h5>
+                    <p class="card-text p-4">Place the patch file in the same directory as your vanilla ROM.  Make sure they both have the same name and most emulators will automatically apply the patch when the game loads.  Give the files a unique name so that the emulator doesn't try to load save data from an old seed.</p>
+                </div>
+
+            </div>
+
+            <!-- Links to stuff -->
+            <div class="card mb-3">
+                <h4 class="card-header">Resources</h4>
+                <ul class="card-text p-4">
+                    <li><a href="https://discord.gg/uwYhG2YrAAl">Join our Discord</a></li>
+                    <li><a href="https://docs.google.com/document/d/1lrpnDAR66YIaDHZmlTunPH5PR1_WosjCUYu11101Hvs/edit?tab=t.0#heading=h.y5mkdovjdrae">Beginner's Guide</a></li>
+                </ul>
+            </div>
+        </div>
     </body>
 </html>

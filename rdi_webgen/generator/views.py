@@ -48,13 +48,20 @@ class GenerateView(FormView):
         toml_dict['input_file'] = './ct.sfc'  # TODO: Needed?
 
         # Generate a randomized ROM
-        args = tomloptions.toml_data_to_args(toml_dict)
-        settings = ctrando.randomizer.extract_settings(*args)
-        base_rom = ctrando.common.ctrom.CTRom.from_file('./ct.sfc')
-        ct_rom = ctrando.randomizer.ctrom.CTRom(base_rom.getvalue())
-        config = ctrando.randomizer.get_random_config(settings, ct_rom)
-        out_rom = ctrando.randomizer.get_ctrom_from_config(
-            ct_rom, settings, config)
+        try:
+            args = tomloptions.toml_data_to_args(toml_dict)
+            settings = ctrando.randomizer.extract_settings(*args)
+            base_rom = ctrando.common.ctrom.CTRom.from_file('./ct.sfc')
+            ct_rom = ctrando.randomizer.ctrom.CTRom(base_rom.getvalue())
+            config = ctrando.randomizer.get_random_config(settings, ct_rom)
+            out_rom = ctrando.randomizer.get_ctrom_from_config(
+                ct_rom, settings, config)
+        except ValueError as ve:
+            context = {
+                'form': form,
+                'error_text': str(ve)
+            }
+            return render(self.request, 'generator/index.html', context)
 
         # Create a patch file
         # python-bps is insanely slow.
@@ -65,7 +72,11 @@ class GenerateView(FormView):
             os.system(
                 f'flips --create ct.sfc {temp_file.file.name} {bps_file_name}')
         except Exception:
-            return render(self.request, 'generator/error.html', status=404)
+            context = {
+                'form': form,
+                'error_text': 'Failed to generate patch file'
+            }
+            return render(self.request, 'generator/index.html', context)
 
         # Get the spoiler log
         spoiler_file = io.StringIO()
@@ -94,4 +105,8 @@ class GenerateView(FormView):
 
     def form_invalid(self, form):
         # TODO: Real error page
-        return render(self.request, 'generator/error.html', status=404)
+        context = {
+            'form': form,
+            'error_text': 'Provide a settings TOML file below'
+        }
+        return render(self.request, 'generator/index.html', context)

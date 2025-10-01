@@ -31,6 +31,7 @@ if os.environ.get('DJANGO_ALLOWED_HOSTS') is None:
 else:
     ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS').split(' ')
 
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # Application definition
 

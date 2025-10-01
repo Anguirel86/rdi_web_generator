@@ -33,7 +33,7 @@ FROM python:3.12.11-alpine3.22
 
 # Set up a user for the webapp
 RUN mkdir -p /home/rdi
-run addgroup -S rdi && adduser -S rdi -G rdi
+RUN addgroup -S rdi && adduser -S rdi -G rdi
 ENV HOME=/home/rdi
 ENV APP_HOME=/home/rdi/web
 RUN mkdir $APP_HOME
