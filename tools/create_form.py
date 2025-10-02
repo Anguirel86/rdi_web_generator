@@ -40,14 +40,34 @@ def create_slider_control(flag_name: str, min_val, max_val, step, default_val, f
     """
     Generate HTML for a slider with the give min/max/interval
     """
+    # Add the HTML portion of the control
     form_buffer.write('<div class="form-group">\n')
-    form_buffer.write(f'  <label for"{{{{form.{
+    form_buffer.write(f'  <label for="{{{{form.{
                       flag_name}.id_for_label}}}}" class="form-label mr-2">{flag_name}</label>\n')
     form_buffer.write(f'  <input type="range" class="form-range" name="{{{{form.{flag_name}.name}}}}" id="{{{{form.{
                       flag_name}.id_for_label}}}}" min="{min_val}" max="{max_val}" step="{step}" value="{default_val}">\n')
     form_buffer.write(f'  <input type="text" id="{{{{form.{
-                      flag_name}.id_for_label}}}}_text" form="none" size="1">\n')
+                      flag_name}.id_for_label}}}}_text" form="none" size="1" value="{default_val}">\n')
     form_buffer.write('</div>\n')
+
+    # Add the javascript portion of the control
+    # The slider and text box should update each other on change
+    javascript = f'''
+        <script>
+          slider_{flag_name} = document.getElementById("{{{{form.{flag_name}.id_for_label}}}}");
+          text_{flag_name} = document.getElementById("{{{{form.{flag_name}.id_for_label}}}}_text");
+
+          slider_{flag_name}.addEventListener("input", function(event) {{
+            text_{flag_name}.value = slider_{flag_name}.value.toString();
+          }});
+
+          text_{flag_name}.addEventListener("input", function(event) {{
+            slider_{flag_name}.value = text_{flag_name}.value;
+          }});
+        </script>
+        '''
+
+    form_buffer.write(javascript)
 
 
 def create_choice_control(flag_name: str, choices: list, default_value, form_buffer: io.StringIO):
@@ -128,9 +148,10 @@ def main():
     pyform_buffer = io.StringIO()
     init_pyform(pyform_buffer)
 
+    javascript_buffer = io.StringIO()
+
     nav_tab_buffer = io.StringIO()
     nav_tab_buffer.write('<!--Auto-generated code - Do no modify-->\n')
-    nav_tab_buffer.write('<ul class="nav nav-tabs">\n')
 
     tab_page_buffer = io.StringIO()
     tab_page_buffer.write('<!--Auto-generated code - Do no modify-->\n')
@@ -150,9 +171,6 @@ def main():
         write_tab_page_entry(tab_page_buffer, section_name, first_section)
 
         first_section = False
-
-    # Close out the nav tabs entries
-    nav_tab_buffer.write('</ul>\n\n')
 
     # generatre the Django form
     pyform_buffer.seek(0)

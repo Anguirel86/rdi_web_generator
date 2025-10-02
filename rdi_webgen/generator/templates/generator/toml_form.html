@@ -16,7 +16,7 @@
     <body>
         <!-- Main form div -->
         <div class="container">
-            <form name="toml_gen_form" id="toml_gen_form" action="{% url 'generator:generate_toml' %}" method="post" enctype="multipart/form-data" onsubmit="prepareform()">
+            <form name="toml_gen_form" id="toml_gen_form" action="{% url 'generator:toml_gen' %}" method="post" enctype="multipart/form-data" onsubmit="prepareform()">
                 {% csrf_token %}
 
                 <!-- The nav tabs are auto-generated -->
