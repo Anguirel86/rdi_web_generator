@@ -1,22 +1,23 @@
 import io
+import os
 
 from ctrando.arguments import (
     arguments,
     argumenttypes,
-    battlerewards,
-    techoptions,
-    enemyscaling,
-    logicoptions,
-    bossrandooptions,
-    shopoptions,
-    objectiveoptions,
-    entranceoptions,
-    recruitoptions,
-    treasureoptions,
-    enemyoptions,
-    postrandooptions,
-    gearrandooptions,
-    characteroptions
+    #    battlerewards,
+    #    techoptions,
+    #    enemyscaling,
+    #    logicoptions,
+    #    bossrandooptions,
+    #    shopoptions,
+    #    objectiveoptions,
+    #    entranceoptions,
+    #    recruitoptions,
+    #    treasureoptions,
+    #    enemyoptions,
+    #    postrandooptions,
+    #    gearrandooptions,
+    #    characteroptions
 )
 
 options_to_omit = []
@@ -41,7 +42,7 @@ def create_slider_control(flag_name: str, min_val, max_val, step, default_val, f
     """
     form_buffer.write('<div class="form-group">\n')
     form_buffer.write(f'  <label for"{{{{form.{
-                      flag_name}.id_for_label}}}} class="form-label mr-2">{flag_name}</label>\n')
+                      flag_name}.id_for_label}}}}" class="form-label mr-2">{flag_name}</label>\n')
     form_buffer.write(f'  <input type="range" class="form-range" name="{{{{form.{flag_name}.name}}}}" id="{{{{form.{
                       flag_name}.id_for_label}}}}" min="{min_val}" max="{max_val}" step="{step}" value="{default_val}">\n')
     form_buffer.write(f'  <input type="text" id="{{{{form.{
@@ -100,27 +101,77 @@ def generate_form_section(section_name: str, arg_spec: dict, html_buffer: io.Str
             print(f'Unknown arg type for {flag}')
 
 
+def init_pyform(buffer: io.StringIO):
+    # Handle import and class definition for the Django form
+    buffer.write('from django import forms\n\n')
+    buffer.write('class TomlGenForm(forms.Form)\n')
+
+
+def write_nav_tab_entry(buffer: io.StringIO, section_name: str, active: bool):
+    active_tab = ' active' if active else ''
+    buffer.write(f'  <li class="nav-item"><a class="nav-link{
+        active_tab}" data-toggle="tab" href="#options-{
+        section_name}">{section_name}</a></li>\n')
+
+
+def write_tab_page_entry(buffer: io.StringIO, section_name: str, active: bool):
+    active_tab = ' active' if active else ''
+    buffer.write(f'<div class="tab-pane fade show{
+        active_tab}" id="options-{section_name}">\n')
+    buffer.write(
+        f'  {{% include "generator/toml_gen/{section_name}.html" %}}\n')
+    buffer.write('</div>\n')
+
+
 def main():
     pyform_buffer = io.StringIO()
+    init_pyform(pyform_buffer)
+
+    nav_tab_buffer = io.StringIO()
+    nav_tab_buffer.write('<ul class="nav nav-tabs">\n')
+
+    tab_page_buffer = io.StringIO()
+
     html_buffers = {}
-
     arg_specs = arguments.Settings.get_argument_spec()
-
+    first_section = True
     for section_name, arg_spec in arg_specs.items():
-        print(f'Generating section {section_name}')
         html_buffer = io.StringIO()
         html_buffers[section_name] = html_buffer
-
         generate_form_section(section_name, arg_spec,
                               html_buffer, pyform_buffer)
 
-    # Print out the test data
-    # html_buffer.seek(0)
-    # print(html_buffer.read())
+        # Add the nav tab entry for this section
+        write_nav_tab_entry(nav_tab_buffer, section_name, first_section)
+        write_tab_page_entry(tab_page_buffer, section_name, first_section)
 
-    print('------------------------------------')
+        first_section = False
+
+    # Close out the nav tabs entries
+    nav_tab_buffer.write('</ul>\n\n')
+
+    # generatre the Django form
     pyform_buffer.seek(0)
-    print(pyform_buffer.read())
+    os.mkdir('output')
+    with open('output/toml_gen_form.py', 'w') as file:
+        file.write(pyform_buffer.read())
+
+    # generate html template pages for each option tab
+    os.mkdir('output/html')
+    for name, buffer in html_buffers.items():
+        buffer.seek(0)
+        with open(f'output/html/{name}.html', 'w') as file:
+            file.write(buffer.read())
+
+    # Generate the nav tabs template
+    nav_tab_buffer.seek(0)
+    with open('output/settings_nav_tabs.html', 'w') as file:
+        file.write(nav_tab_buffer.read())
+
+    # generate the tab pages template
+    tab_page_buffer.seek(0)
+    with open('output/settings_tab_pages.html', 'w') as file:
+        file.write(tab_page_buffer.read())
 
 
 if __name__ == "__main__":
