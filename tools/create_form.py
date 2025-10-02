@@ -103,8 +103,9 @@ def generate_form_section(section_name: str, arg_spec: dict, html_buffer: io.Str
 
 def init_pyform(buffer: io.StringIO):
     # Handle import and class definition for the Django form
+    buffer.write('# Auto-generated code - Do no modify\n')
     buffer.write('from django import forms\n\n')
-    buffer.write('class TomlGenForm(forms.Form)\n')
+    buffer.write('class TomlGenForm(forms.Form):\n')
 
 
 def write_nav_tab_entry(buffer: io.StringIO, section_name: str, active: bool):
@@ -128,9 +129,11 @@ def main():
     init_pyform(pyform_buffer)
 
     nav_tab_buffer = io.StringIO()
+    nav_tab_buffer.write('<!--Auto-generated code - Do no modify-->\n')
     nav_tab_buffer.write('<ul class="nav nav-tabs">\n')
 
     tab_page_buffer = io.StringIO()
+    tab_page_buffer.write('<!--Auto-generated code - Do no modify-->\n')
 
     html_buffers = {}
     arg_specs = arguments.Settings.get_argument_spec()
@@ -138,6 +141,7 @@ def main():
     for section_name, arg_spec in arg_specs.items():
         html_buffer = io.StringIO()
         html_buffers[section_name] = html_buffer
+        html_buffer.write('<!--Auto-generated code - Do no modify-->\n')
         generate_form_section(section_name, arg_spec,
                               html_buffer, pyform_buffer)
 

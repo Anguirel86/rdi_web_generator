@@ -7,6 +7,7 @@ from django.views import View
 from django.views.generic import FormView
 
 from .forms import GeneratorForm
+from .toml_gen_form import TomlGenForm
 
 # RDI rando imports
 import ctrando
@@ -34,6 +35,30 @@ class IndexView(View):
             'form': form
         }
         return render(request, 'generator/index.html', context)
+
+
+class TomlFormView(View):
+    """
+    Main page of the toml generator form
+    """
+    @classmethod
+    def get(cls, request):
+        form = TomlGenForm()
+        context = {
+            'form': form
+        }
+        return render(request, 'generator/toml_gen/toml_form.html', context)
+
+class TomlGenView(FormView):
+    """
+    Handle actual TOML generation
+    """
+    form_class = TomlGenForm
+    def form_valid(self, form):
+        pass
+
+    def form_invalid(self, form):
+        pass
 
 
 class GenerateView(FormView):
