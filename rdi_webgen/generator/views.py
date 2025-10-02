@@ -47,7 +47,7 @@ class TomlFormView(View):
         context = {
             'form': form
         }
-        return render(request, 'generator/toml_gen/toml_form.html', context)
+        return render(request, 'generator/toml_form.html', context)
 
 class TomlGenView(FormView):
     """
