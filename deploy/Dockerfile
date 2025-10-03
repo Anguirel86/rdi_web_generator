@@ -52,6 +52,10 @@ RUN pip install --no-cache /wheels/*
 COPY ./rdi_webgen .
 COPY ./deploy/entrypoint.sh .
 
+# Copy the tool directory to the container
+# This includes the script to autogen the toml form
+COPY ./tools ./tools
+
 RUN chown -R rdi:rdi $APP_HOME
 
 # NOTE: bash isn't really needed for normal usage, but is useful for debugging
