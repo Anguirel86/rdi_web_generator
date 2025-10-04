@@ -20,6 +20,7 @@ from zipfile import ZipFile
 import io
 import os
 import tempfile
+import toml
 import tomllib
 
 
@@ -49,16 +50,65 @@ class TomlFormView(View):
         }
         return render(request, 'generator/toml_form.html', context)
 
+
 class TomlGenView(FormView):
     """
     Handle actual TOML generation
     """
     form_class = TomlGenForm
+
     def form_valid(self, form):
-        pass
+
+        data_dict = {}
+        # Loop over the form fields and store them in a new dictionary
+        # Most fields can be read as-is, but the list fields will need to
+        # be converted from a string to a list type in the new dict.
+        for name, value in form.cleaned_data.items():
+            if isinstance(value, str):
+                if value.startswith('[') and value.endswith(']'):
+                    # If this is an empty list then don't add the field to the toml
+                    if len(value) != 2:
+                        temp = [x.replace("'", '').strip()
+                                for x in value[1:-1].split(',')]
+                        data_dict[name] = temp
+            else:
+                data_dict[name] = value
+
+        # Convert the form fields to TOML
+        toml_data = io.StringIO()
+        toml.dump(data_dict, toml_data)
+
+        # Feed the toml data to the rando arg parser to validate it
+        toml_data.seek(0)
+        toml_dict = tomllib.load(io.BytesIO(toml_data.getvalue().encode()))
+        try:
+            args = tomloptions.toml_data_to_args(toml_dict)
+            settings = ctrando.randomizer.extract_settings(*args)
+        except ValueError as ve:
+            context = {
+                'form': form,
+                'error_text': str(ve)
+            }
+            return render(self.request, 'generator/toml_form.html', context)
+
+        # If we made it here, the form is good
+        # Package it up and send it to the user as a toml file
+        # NOTE: toml content type is application/toml, which implies it's
+        #       meant to be read by an application.  Going to use text/plain
+        #       for now just to ensure it's treated as a text file in browsers
+        toml_data.seek(0)
+        content = FileWrapper(toml_data)
+        response = HttpResponse(content, content_type='text/plain')
+        response['Content-Disposition'] = 'attachment; filename=settings.toml'
+
+        return response
 
     def form_invalid(self, form):
-        pass
+        context = {
+            'form': form,
+            'error_text': str(form.errors)
+        }
+        return render(self.request, 'generator/toml_form.html', context)
 
 
 class GenerateView(FormView):

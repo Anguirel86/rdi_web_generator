@@ -14,6 +14,10 @@
     </head>
 
     <body>
+        <div>
+            <!-- Error text if form parsing fails on the backend -->
+            <h3 style="color: red">{{error_text}}</h3>
+        </div>
         <!-- Main form div -->
         <div class="container">
             <form name="toml_gen_form" id="toml_gen_form" action="{% url 'generator:toml_gen' %}" method="post" enctype="multipart/form-data" onsubmit="prepareform()">
