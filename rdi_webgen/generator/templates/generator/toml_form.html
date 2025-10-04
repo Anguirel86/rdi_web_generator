@@ -20,12 +20,14 @@
                 {% csrf_token %}
 
                 <!-- The nav tabs are auto-generated -->
-                <ul class="nav nav-tabs">
-                    {% include "generator/toml_gen/settings_nav_tabs.html" %}
-                </ul>
+                <div class="border border-primary rounded">
+                    <ul class="nav nav-tabs">
+                        {% include "generator/toml_gen/settings_nav_tabs.html" %}
+                    </ul>
+                </div>
 
                 <!-- The individual tab template pages are auto-generated -->
-                <div class="tab-content">
+                <div class="tab-content border border-secondary rounded p-2">
                     {% include "generator/toml_gen/settings_tab_pages.html" %}
                 </div>
 
