@@ -1,3 +1,9 @@
+"""
+This script autogenerates all of the toml form html based on the arg specs
+returned by the randomizer arguments package.  The form contains a tab for
+each of the major groupings of rando arguments.
+"""
+
 import io
 import os
 

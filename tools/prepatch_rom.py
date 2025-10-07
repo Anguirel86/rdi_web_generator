@@ -1,3 +1,8 @@
+"""
+This script generates prepatched config and ctrom objects which can be
+used later by the randomizer to speed up seed generation.
+"""
+
 from ctrando import common, randomizer
 
 
