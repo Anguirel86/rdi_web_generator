@@ -28,14 +28,6 @@
     </head>
 
     <body>
-        <!--
-            Basic intro
-            Some links
-              github
-              discord
-              settings file templates
-            Form with box for settings file
-        -->
         <div class="container pt-3">
             <div class="card mb-3">
                 <h4 class="card-header">Rando Dalton Imperial</h4>
@@ -57,12 +49,16 @@
                         {% csrf_token %}
 
                         <div class="form-group pr-4">
-                            <label class="form-label ml-2 pt-4" for="{{form.settings_file.id_for_label}}">Upload a custom settings (.toml) file. (<a href="https://github.com/Pseudoarc/ctrando/tree/main/src/ctrando/presets">Sample settings files available here</a>)</label>
+                            <label class="form-label ml-2 pt-4" for="{{form.settings_file.id_for_label}}">Upload a custom settings (.toml) file.</label>
                             <input type="file" class="form-control mr-2 ml-2" id="{{form.settings_file.id_for_label}}" name="{{form.settings_file.name}}" onchange="settings_file_changed()"/>
+                            <ul class="mt-4">
+                                <li><a href="https://github.com/Pseudoarc/ctrando/tree/main/src/ctrando/settings/presets" target="_blank">Get sample settings files here</a></li>
+                                <li><a href="{% url 'generator:toml_form' %}" target="_blank">Or create a custom file with our settings builder</a></li>
+                            </ul>
                         </div>
 
 
-                        <label class="form-label ml-2 pt-4">Or select a preset:</label>
+                        <label class="form-label ml-2 pt-1">Or select a preset:</label>
                         <div class="border border-secondary rounded p-2 ml-2 mr-3">
                             <button class="btn btn-primary mt-1 mb-1" type="button" onclick="set_preset('samplesettings')">Sample Preset</button>
                             <button class="btn btn-primary mt-1 mb-1" type="button" onclick="set_preset('preset1')">Preset1</button>
