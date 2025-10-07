@@ -15,8 +15,11 @@ cp form_gen_output/html/* $AUTOGEN_HTML_PATH
 
 # Copy over the auto-generated python form file
 cp form_gen_output/toml_gen_form.py generator/
-
 rm -r form_gen_output
+
+# Generate the ROM files pre-patched with the base patch.
+# This can be used to speed up subsequent randomizer calls
+python tools/prepatch_rom.py
 
 # Handle db migrations and static files on container startup
 python manage.py migrate

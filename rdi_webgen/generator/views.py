@@ -161,7 +161,7 @@ class GenerateView(FormView):
             ct_rom = ctrando.randomizer.ctrom.CTRom(base_rom.getvalue())
             config = ctrando.randomizer.get_random_config(settings, ct_rom)
             out_rom = ctrando.randomizer.get_ctrom_from_config(
-                ct_rom, settings, config)
+                ct_rom, settings, config, 'post_config.pkl', 'prepatched_rom.pkl')
         except ValueError as ve:
             context = {
                 'form': form,
