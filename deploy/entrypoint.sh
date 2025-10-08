@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Autogenerate the toml generator html and python form code
+echo "Auto-generating TOML generator form..."
 python tools/create_toml_gen_form.py
 
 if [[ $? -ne 0 ]]; then
@@ -9,7 +10,6 @@ if [[ $? -ne 0 ]]; then
 fi
 
 # Copy over the auto-generated html files
-echo "Auto-generating TOML generator form..."
 AUTOGEN_HTML_PATH=generator/templates/generator/toml_gen
 mkdir -p $AUTOGEN_HTML_PATH
 cp form_gen_output/html/* $AUTOGEN_HTML_PATH
