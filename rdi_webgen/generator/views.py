@@ -13,8 +13,10 @@ from .toml_gen_form import TomlGenForm
 import ctrando
 import ctrando.randomizer
 from ctrando.arguments import tomloptions
+from ctrando.arguments.postrandooptions import PostRandoOptions
 
 # standard lib imports
+import argparse
 from importlib import resources as impres
 from zipfile import ZipFile
 import io
@@ -120,7 +122,7 @@ class GenerateView(FormView):
     def form_valid(self, form):
 
         # Check is the user selected a preset or uploaded a file
-        if len(self.request.FILES) == 0:
+        if 'settings_file' not in self.request.FILES:
             # Preset file
             preset_name = form.cleaned_data['preset_file']
             if preset_name == '':
@@ -153,10 +155,20 @@ class GenerateView(FormView):
         toml_dict = tomllib.load(buf)
         toml_dict['input_file'] = './ct.sfc'  # TODO: Needed?
 
+        # Handle the personalization file if provided by the user
+        if 'personalization_file' in self.request.FILES:
+            personalization_buf = io.BytesIO(
+                self.request.FILES['personalization_file'].read())
+            personalization_dict = tomllib.load(personalization_buf)
+            personal_settings = PostRandoOptions.extract_from_namespace(
+                argparse.Namespace(**personalization_dict))
+
         # Generate a randomized ROM
         try:
             args = tomloptions.toml_data_to_args(toml_dict)
             settings = ctrando.randomizer.extract_settings(*args)
+            if personal_settings is not None:
+                settings.post_random_options = personal_settings
             base_rom = ctrando.common.ctrom.CTRom.from_file('./ct.sfc')
             ct_rom = ctrando.randomizer.ctrom.CTRom(base_rom.getvalue())
             config = ctrando.randomizer.get_random_config(settings, ct_rom)

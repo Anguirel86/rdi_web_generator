@@ -48,15 +48,16 @@
                     <form name="gen_form" id="gen_form" action="{% url 'generator:generate' %}" target="_blank" method="post" enctype="multipart/form-data">
                         {% csrf_token %}
 
+
                         <div class="form-group pr-4">
                             <label class="form-label ml-2 pt-4" for="{{form.settings_file.id_for_label}}">Upload a custom settings (.toml) file.</label>
-                            <input type="file" class="form-control mr-2 ml-2" id="{{form.settings_file.id_for_label}}" name="{{form.settings_file.name}}" onchange="settings_file_changed()"/>
+                            <input type="file" class="form-control ml-2" id="{{form.settings_file.id_for_label}}" name="{{form.settings_file.name}}" onchange="settings_file_changed()"/>
+
                             <ul class="mt-4">
                                 <li><a href="https://github.com/Pseudoarc/ctrando/tree/main/src/ctrando/settings/presets" target="_blank">Get sample settings files here</a></li>
                                 <li><a href="{% url 'generator:toml_form' %}" target="_blank">Or create a custom file with our settings builder</a></li>
                             </ul>
                         </div>
-
 
                         <label class="form-label ml-2 pt-1">Or select a preset:</label>
                         <div class="border border-secondary rounded p-2 ml-2 mr-3">
@@ -65,6 +66,11 @@
                         <div class="form-group pr-4">
                             <label class="form-label ml-2 pt-4" for="{{frm.preset_file.id_for_label}}">Chosen settings:</label>
                             <input type="textbox" class="form-control ml-2 mr-2"  id="{{form.preset_file.id_for_label}}" name="{{form.preset_file.name}}" readonly>
+                        </div>
+
+                        <div class="form-group pr-4" data-toggle="tooltip" title="An optional toml file containing post-randomization settings to be applied in addition to the main settings file">
+                            <label class="form-label ml-2 pt-2" for="{{form.personalization_file.id_for_label}}">(Optional) Upload a personlization (.toml) file.</label>
+                            <input type="file" class="form-control ml-2" id="{{form.personalization_file.id_for_label}}" name="{{form.personalization_file.name}}"/>
                         </div>
 
                         <button class="btn btn-primary mb-2 ml-2" type="submit">Generate Patch</button>
