@@ -2,7 +2,7 @@
 <html>
     {% load static %}
     <head>
-        <title>Rando Dalton Imperial Web Generator</title>
+        <title>Rando-Dalton Imperial Web Generator</title>
         <link rel="icon" type="image/png" href="{% static 'generator/img/DaltonDab.png' %}">
         <!-- Bootstrap stuff  - TODO - prune these, probably don't need them all -->
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
@@ -26,14 +26,23 @@
                 document.getElementById("{{form.preset_file.id_for_label}}").value = parts.pop();
             }
         </script>
+
+        <style>
+            .banner-img {
+                width: 100%;
+                height: auto;
+                object-fit: cover;
+            }
+        </style>
     </head>
 
     <body>
         <div class="container pt-3">
+            <div class="rounded"><img class="banner-img rounded" src='{% static "generator/img/RDIBanner.png" %}'/></div>
             <div class="card mb-3">
-                <h4 class="card-header">Rando Dalton Imperial</h4>
+                <h4 class="card-header">Rando-Dalton Imperial</h4>
                 <p class="card-text p-4">
-                    Rando Dalton Imperial (RDI) is an open world randomizer for Chrono Trigger.  This randomizer is heavily influenced by previous open world randomizers for Chrono Trigger, both Jets of Time and Wings of Time before it.  While those randomizers take liberties with the gameplay to provide a tight racing experience, this randomizer’s goal is to preserve as much of the vanilla gameplay experience as possible.
+                    Rando-Dalton Imperial (RDI) is an open world randomizer for Chrono Trigger.  This randomizer is heavily influenced by previous open world randomizers for Chrono Trigger, both Jets of Time and Wings of Time before it.  While those randomizers take liberties with the gameplay to provide a tight racing experience, this randomizer’s goal is to preserve as much of the vanilla gameplay experience as possible.
                 </p>
             </div>
 
