@@ -13,6 +13,14 @@ from ctrando.arguments import (
 )
 
 
+def sanitize_string(input: str) -> str:
+    """
+    Sanitize a string so it can be used in an html document
+    """
+    output = input.replace('"', '&quot;')
+    return output
+
+
 def create_toggle_control(
         flag_name: str,
         spec: argumenttypes.FlagArg,
@@ -22,8 +30,9 @@ def create_toggle_control(
     Generate HTML for a toggle for the given flag.
     """
     default_string = 'checked' if spec.default_value else ''
+    help_text = sanitize_string(spec.help_text)
     toggle_control = f'''
-        <div class="form-group form-check pl-0" data-toggle="tooltip" title="{spec.help_text}">
+        <div class="form-group form-check pl-0" data-toggle="tooltip" title="{help_text}">
           <input type="checkbox" name="{{{{form.{flag_name}.name}}}}" id="{{{{form.{flag_name}.id_for_label}}}}" data-toggle="toggle" {default_string}>
           <label for="{{{{form.{flag_name}.id_for_label}}}}">{flag_name}</label>
         </div>
@@ -44,8 +53,9 @@ def create_slider_control(
     Generate HTML for a slider with the give min/max/interval
     """
     # The slider and text box should update each other on change
+    help_text = sanitize_string(spec.help_text)
     slider_control = f'''
-        <div class="form-group" data-toggle="tooltip" title="{spec.help_text}">
+        <div class="form-group" data-toggle="tooltip" title="{help_text}">
           <label for="{{{{form.{flag_name}.id_for_label}}}}" class="form-label mr-2">{flag_name}</label>
           <input type="range" class="form-range" name="{{{{form.{flag_name}.name}}}}" id="{{{{form.{flag_name}.id_for_label}}}}" min="{spec.min_value}" max="{spec.max_value}" step="{spec.interval}" value="{spec.default_value}">
           <input type="text" id="{{{{form.{flag_name}.id_for_label}}}}_text" form="none" size="1" value="{spec.default_value}">
@@ -82,8 +92,9 @@ def create_choice_control(
     """
     Generate HTML for a dropdown box for the provided choice list
     """
+    help_text = sanitize_string(spec.help_text)
     form_buffer.write(
-        f'<div class="form-group" data-toggle="tooltip" title="{spec.help_text}">\n')
+        f'<div class="form-group" data-toggle="tooltip" title="{help_text}">\n')
     form_buffer.write(f'  <label for="{{{{form.{flag_name}.id_for_label}}}}">{
                       flag_name}:</label>\n')
     form_buffer.write(f'  <select class="form-control" name="{{{{form.{
@@ -107,8 +118,9 @@ def create_text_control(
     """
     Generate HTML for a text input field
     """
+    help_text = sanitize_string(spec.help_text)
     text_control = f'''
-        <div class="form-group" data-toggle="tooltip" title="{spec.help_text}">
+        <div class="form-group" data-toggle="tooltip" title="{help_text}">
           <label for="{{{{form.{flag_name}.id_for_label}}}}">{flag_name}</label>
           <input class="form-control" name="{{{{form.{flag_name}.name}}}}" id="{{{{form.{flag_name}.id_for_label}}}}" type="text">
         </div>
@@ -130,8 +142,9 @@ def create_multiselect_control(
     """
     # This one is going to be complicated.  For now just set the default values
     # to a text field and don't let the user edit them.
+    help_text = sanitize_string(spec.help_text)
     html_buffer.write(
-        f'<div class="form-group" data-toggle="tooltip" title="{spec.help_text}">\n')
+        f'<div class="form-group" data-toggle="tooltip" title="{help_text}">\n')
     html_buffer.write(f'  <label for="{{{{form.{flag_name}.id_for_label}}}}">{
                       flag_name}</label>\n')
 
