@@ -152,14 +152,29 @@ class GenerateView(FormView):
             # Get the settings file from the form
             buf = io.BytesIO(self.request.FILES['settings_file'].read())
 
-        toml_dict = tomllib.load(buf)
+        try:
+            toml_dict = tomllib.load(buf)
+        except Exception:
+            context = {
+                'form': form,
+                'error_text': 'Settings file is not a valid .toml file'
+            }
+            return render(self.request, 'generator/index.html', context)
+
         toml_dict['input_file'] = './ct.sfc'  # TODO: Needed?
 
         # Handle the personalization file if provided by the user
         if 'personalization_file' in self.request.FILES:
             personalization_buf = io.BytesIO(
                 self.request.FILES['personalization_file'].read())
-            personalization_dict = tomllib.load(personalization_buf)
+            try:
+                personalization_dict = tomllib.load(personalization_buf)
+            except Exception:
+                context = {
+                    'form': form,
+                    'error_text': 'Personlization file is not a valid .toml file'
+                }
+            return render(self.request, 'generator/index.html', context)
             personal_settings = PostRandoOptions.extract_from_namespace(
                 argparse.Namespace(**personalization_dict))
 

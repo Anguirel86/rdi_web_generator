@@ -18,10 +18,6 @@
     </head>
 
     <body>
-        <div>
-            <!-- Error text if form parsing fails on the backend -->
-            <h3 style="color: red">{{error_text}}</h3>
-        </div>
         <!-- Main form div -->
         <div class="container">
             <!--File input to let the user load an existing toml file -->
@@ -39,7 +35,15 @@
                             const reader = new FileReader();
 
                             reader.onload = (e) => {
-                                let parsed_data = parse(e.target.result);
+                                let parsed_data = null;
+                                try {
+                                    parsed_data = parse(e.target.result);
+                                } catch (error) {
+                                    let error_text = document.getElementById("error_text")
+                                    error_text.innerHTML = "Invalid TOML file";
+                                    console.log("Setting error text");
+                                    return;
+                                }
 
                                 for (const key in parsed_data) {
                                     const elem_id = 'id_' + key;
@@ -84,6 +88,10 @@
                         }
                     });
                 </script>
+                <div>
+                    <!-- Error text if form parsing fails on the backend -->
+                    <h3 id="error_text" style="color: red">{{error_text}}</h3>
+                </div>
             </div>
 
             <form name="toml_gen_form" id="toml_gen_form" action="{% url 'generator:toml_gen' %}" method="post" enctype="multipart/form-data" onsubmit="prepareform()">
