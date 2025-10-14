@@ -174,7 +174,7 @@ class GenerateView(FormView):
                     'form': form,
                     'error_text': 'Personlization file is not a valid .toml file'
                 }
-            return render(self.request, 'generator/index.html', context)
+                return render(self.request, 'generator/index.html', context)
             personal_settings = PostRandoOptions.extract_from_namespace(
                 argparse.Namespace(**personalization_dict))
 
