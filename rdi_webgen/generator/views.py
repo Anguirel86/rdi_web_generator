@@ -1,6 +1,6 @@
 # django imports
-from django.shortcuts import render, redirect
-from django.http import HttpRequest, HttpResponse
+from django.shortcuts import render
+from django.http import HttpResponse
 from wsgiref.util import FileWrapper
 
 from django.views import View
@@ -12,7 +12,7 @@ from .toml_gen_form import TomlGenForm
 # RDI rando imports
 import ctrando
 import ctrando.randomizer
-from ctrando.arguments import tomloptions
+from ctrando.arguments import arguments, tomloptions
 from ctrando.arguments.postrandooptions import PostRandoOptions
 
 # standard lib imports
@@ -24,6 +24,8 @@ import os
 import tempfile
 import toml
 import tomllib
+import traceback
+import typing
 
 
 class IndexView(View):
@@ -119,68 +121,54 @@ class GenerateView(FormView):
     """
     form_class = GeneratorForm
 
-    def form_valid(self, form):
+    def get_settings_dict(self, form) -> dict[str, typing.Any]:
+        """
+        Get the settings dictionary corresponding to the user's chosen preset
+        or settings file
+        """
+        has_preset = form.cleaned_data['preset_file'] != ''
+        has_settings_file = 'settings_file' in self.request.FILES
 
-        # Check is the user selected a preset or uploaded a file
-        if 'settings_file' not in self.request.FILES:
-            # Preset file
-            preset_name = form.cleaned_data['preset_file']
-            if preset_name == '':
-                # User must provide either a preset name or a settings file
-                context = {
-                    'form': form,
-                    'error_text': f'Select a preset or a custom settings file: {preset_name}'
-                }
-                return render(self.request, 'generator/index.html', context)
+        if not has_preset and not has_settings_file:
+            # We need at least one of these to continue
+            raise ValueError(
+                'Select a preset or upload a custom settings file')
 
-            # Read the preset file from the ctrando package
-            preset_file_path = impres.files(
-                ctrando) / f'presets/{preset_name}.toml'
-            if not os.path.isfile(preset_file_path):
-                context = {
-                    'form': form,
-                    'error_text': f'Invalid preset file: {preset_name}.toml'
-                }
-                return render(self.request, 'generator/index.html', context)
-
-            # Preset file exists, read it in
-            with open(preset_file_path, 'rb') as f:
-                buf = io.BytesIO(f.read())
-
-        else:
-            # Custom settings file
-            # Get the settings file from the form
+        if has_settings_file:
+            # Load the user's custom settings file
             buf = io.BytesIO(self.request.FILES['settings_file'].read())
+            return tomllib.load(buf)
+        else:
+            # Get the preset data from the rando
+            preset_name = form.cleaned_data['preset_file']
+            preset = arguments.Presets[preset_name]
+            return arguments.get_preset(preset)
 
-        try:
-            toml_dict = tomllib.load(buf)
-        except Exception:
-            context = {
-                'form': form,
-                'error_text': 'Settings file is not a valid .toml file'
-            }
-            return render(self.request, 'generator/index.html', context)
-
-        toml_dict['input_file'] = './ct.sfc'  # TODO: Needed?
-
-        # Handle the personalization file if provided by the user
+    def get_personalization_settings(self):
+        """
+        Apply personalization if the user provided a file
+        """
+        personal_settings = None
         if 'personalization_file' in self.request.FILES:
-            personalization_buf = io.BytesIO(
+            buf = io.BytesIO(
                 self.request.FILES['personalization_file'].read())
+
             try:
-                personalization_dict = tomllib.load(personalization_buf)
-            except Exception:
-                context = {
-                    'form': form,
-                    'error_text': 'Personlization file is not a valid .toml file'
-                }
-                return render(self.request, 'generator/index.html', context)
+                personalization_dict = tomllib.load(buf)
+            except Exception as ex:
+                raise Exception('Invalid personalization file: ' + str(ex))
+
             personal_settings = PostRandoOptions.extract_from_namespace(
                 argparse.Namespace(**personalization_dict))
 
-        # Generate a randomized ROM
+        return personal_settings
+
+    def generate(self, settings, personal_settings):
+        """
+        Generate a randomized game based on the given settings files
+        """
         try:
-            args = tomloptions.toml_data_to_args(toml_dict)
+            args = tomloptions.toml_data_to_args(settings)
             settings = ctrando.randomizer.extract_settings(*args)
             if personal_settings is not None:
                 settings.post_random_options = personal_settings
@@ -189,46 +177,71 @@ class GenerateView(FormView):
             config = ctrando.randomizer.get_random_config(settings, ct_rom)
             out_rom = ctrando.randomizer.get_ctrom_from_config(
                 ct_rom, settings, config, 'post_config.pkl', 'prepatched_rom.pkl')
-        except ValueError as ve:
-            context = {
-                'form': form,
-                'error_text': str(ve)
-            }
-            return render(self.request, 'generator/index.html', context)
 
-        # Create a patch file
-        # python-bps is insanely slow.
+            spoiler_file = io.StringIO()
+            ctrando.randomizer.write_spoilers_to_file(
+                settings, config, spoiler_file)
+        except ValueError as ve:
+            raise Exception(f'Invalid args: {str(ve)}')
+        except Exception as ex:
+            raise Exception(f'Unknown error during generation: {str(ex)}')
+
+        return out_rom, spoiler_file
+
+    def get_patch_file(self, form, out_rom) -> io.BytesIO:
+        """
+        Get a BytesIO object with the patch file data
+        """
         temp_file = tempfile.NamedTemporaryFile()
         bps_file_name = f'{temp_file.file.name}.bps'
+        patch_buffer = io.BytesIO()
         try:
+            # Write the patch file
             temp_file.write(out_rom.getbuffer())
             os.system(
                 f'flips --create ct.sfc {temp_file.file.name} {bps_file_name}')
-        except Exception:
+
+            # Read the patch file back into a BytesIO object
+            with open(bps_file_name, 'rb') as patch_file:
+                patch_buffer.write(patch_file.read())
+
+            # Clean up the temp bps file
+            os.remove(bps_file_name)
+
+        except Exception as ex:
+            raise Exception('Failed to generate patch file: ' + str(ex))
+
+        return patch_buffer
+
+    def form_valid(self, form):
+
+        try:
+            # Get the settings for this request
+            settings_dict = self.get_settings_dict(form)
+            settings_dict['input_file'] = './ct.sfc'  # TODO: Needed?
+            personal_settings = self.get_personalization_settings()
+
+            # Generate a randomized ROM
+            out_rom, spoiler_log = self.generate(
+                settings_dict, personal_settings)
+
+            # Create the patch file
+            patch_file = self.get_patch_file(form, out_rom)
+        except Exception as ex:
             context = {
                 'form': form,
-                'error_text': 'Failed to generate patch file'
+                'error_text': str(ex)
             }
             return render(self.request, 'generator/index.html', context)
 
-        # Get the spoiler log
-        spoiler_file = io.StringIO()
-        ctrando.randomizer.write_spoilers_to_file(
-            settings, config, spoiler_file)
-
-        # Create a zip file with the patch and spoiler log
+        # Build the zip file to send to the user
         zip_buf = io.BytesIO()
-
         with ZipFile(zip_buf, 'w') as zip_file:
-            # zip_file.writestr('ct-mod.sfc', out_rom.getbuffer())
-            zip_file.write(bps_file_name, 'ct-mod.bps')
-            zip_file.writestr('ct-mod-spoilers.txt', spoiler_file.getvalue())
-
-        # Clean up the temporary BPS file
-        os.remove(bps_file_name)
-
+            zip_file.writestr('ct-mod.bps', patch_file.getvalue())
+            zip_file.writestr('ct-mod-spoilers.txt', spoiler_log.getvalue())
         zip_buf.seek(0)
 
+        # Build and send the response object
         content = FileWrapper(zip_buf)
         response = HttpResponse(
             content, content_type='application/octet-stream')

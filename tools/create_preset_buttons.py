@@ -4,22 +4,20 @@ main randomizer index page.  This allows the index page to always
 be up to date with the latest preset file changes.
 """
 
-import importlib.resources
 import io
-from pathlib import Path
+
+from ctrando.arguments import arguments
 
 
 def main():
-    # Get all settings files from the presets directory in
-    # the ctrando package
-    preset_files = importlib.resources.contents('ctrando.presets')
 
     html_buffer = io.StringIO()
 
-    for file in preset_files:
-        name = Path(file).stem
+    # Get the list of presets from the rando
+    for preset in arguments.Presets:
+        display_name = preset.value.name
         html_buffer.write(
-            f'<button class="btn btn-primary mt-1 mb-1" type="button" onclick="set_preset(\'{name}\')">{name}</button>\n')
+            f'<button class="btn btn-primary mt-1 mb-1" type="button" onclick="set_preset(\'{preset.name}\')">{display_name}</button>\n')
 
     html_buffer.seek(0)
     with open('preset_buttons.html', 'w') as file:

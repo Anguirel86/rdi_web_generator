@@ -3,4 +3,4 @@
     url = https://github.com/Alcaro/Flips.git
 [submodule "submodules/ctrando"]
 	path = submodules/ctrando
-    url = https://github.com/anguirel86/ctrando.git
+    url = https://github.com/Pseudoarc/ctrando.git
