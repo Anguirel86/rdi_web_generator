@@ -1,6 +1,6 @@
 # django imports
 from django.shortcuts import render
-from django.http import HttpResponse
+from django.http import FileResponse, HttpResponse, HttpResponseNotFound
 from wsgiref.util import FileWrapper
 
 from django.views import View
@@ -17,7 +17,7 @@ from ctrando.arguments.postrandooptions import PostRandoOptions
 
 # standard lib imports
 import argparse
-from importlib import resources as impres
+import importlib.resources
 from zipfile import ZipFile
 import io
 import os
@@ -53,6 +53,27 @@ class TomlFormView(View):
             'form': form
         }
         return render(request, 'generator/toml_form.html', context)
+
+
+class FetchPresetView(View):
+    """
+    Fetch a preset (toml) file from the randomizer.
+    """
+
+    @classmethod
+    def get(cls, request, preset_id):
+        # Get the preset file from the randomizer package
+        try:
+            preset_data = arguments.Presets[preset_id].value
+        except KeyError:
+            # Invalid preset file
+            return HttpResponseNotFound(f'Invalid preset: {preset_id}')
+
+        preset_file = importlib.resources.files(
+            'ctrando.arguments.presets').joinpath(preset_data.filename)
+
+        with open(preset_file, 'r') as file:
+            return FileResponse(file.read(), filename='preset.toml')
 
 
 class TomlGenView(FormView):

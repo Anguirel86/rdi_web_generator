@@ -9,4 +9,6 @@ urlpatterns = [
     path('generate', views.GenerateView.as_view(), name='generate'),
     path('toml_form', views.TomlFormView.as_view(), name='toml_form'),
     path('toml_gen', views.TomlGenView.as_view(), name='toml_gen'),
+    path('fetch_preset/<str:preset_id>',
+         views.FetchPresetView.as_view(), name='fetch_preset'),
 ]

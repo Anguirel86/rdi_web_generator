@@ -15,86 +15,120 @@
         <script type="module" src="https://cdn.jsdelivr.net/npm/smol-toml@1.4.2/+esm"></script>
 
         {% include "generator/toml_gen/reset_function.html" %}
+
+        <script type="module">
+            import {parse} from 'https://cdn.jsdelivr.net/npm/smol-toml@latest/dist/index.min.js';
+
+            // Populate form fields based on parsed toml data.
+            function populateFormFromTomlData(parsed_data) {
+                for (const key in parsed_data) {
+                    const elem_id = 'id_' + key;
+                    const elem = document.getElementById(elem_id);
+                    if (elem == null) {continue;}
+                    const value = parsed_data[key];
+
+                    if (typeof value == "boolean") {
+                        // Handle setting check box flags
+                        $('#'+elem_id).prop('checked', value).change();
+                    } else if (typeof value == "number") {
+                        // Handle setting numeric slider flags
+                        $('#'+elem_id).val(value).change();
+                        $('#'+elem_id+'_text').val(value).change();
+                    } else if (typeof value == "string") {
+                        // Handle string types - choice selections/text boxes 
+                        $('#'+elem_id).val(value)
+                    } else if(value instanceof Array) {
+                        // This is one of the list types. Convert the list to
+                        // a string before setting the field
+                        let text_str = "[";
+                        let first_item = true;
+                        for (const item of value) {
+                            if (first_item) {
+                                text_str += "'" + item + "'";
+                            } else {
+                                text_str += ", " + "'" + item + "'";
+                            }
+                            first_item = false;
+                        }
+                        text_str += "]";
+                        $('#'+elem_id).val(text_str);
+                    }
+                }
+            }
+
+            async function setPreset(buttonRef, name) {
+                // Fetch the specified preset file from the server and
+                // set the form fields accordingly.
+                const response = await fetch("{{request.scheme}}://{{request.get_host}}/fetch_preset/" + name);
+                if (!response.ok) {
+                    // Something went wrong with the request
+                    let error_text = document.getElementById("error_text")
+                    error_text.innerHTML = "Failed to fetch preset file";
+                    return;
+                }
+
+                const data = await response.text();
+                let parsed_data = null;
+                try {
+                    parsed_data = parse(data);
+                } catch (error) {
+                    let error_text = document.getElementById("error_text")
+                    error_text.innerHTML = "Invalid preset file";
+                    return;
+                }
+                populateFormFromTomlData(parsed_data);
+            }
+            // Make the function available outside this script module
+            window.setPreset = setPreset;
+
+
+            // Attach an event handler to the file chooser to read the given toml file
+            const file_input = document.getElementById('id_existing_toml');
+            file_input.addEventListener('change', (event) => {
+                // Read the toml and populate the form
+                const file = event.target.files[0];
+
+                if (file) {
+                    const reader = new FileReader();
+
+                    reader.onload = (e) => {
+                        let parsed_data = null;
+                        try {
+                            parsed_data = parse(e.target.result);
+                        } catch (error) {
+                            let error_text = document.getElementById("error_text")
+                            error_text.innerHTML = "Invalid TOML file";
+                            return;
+                        }
+                        populateFormFromTomlData(parsed_data);
+                    };
+
+                    reader.onerror = (e) => {
+                        let error_text = document.getElementById("error_text")
+                        error_text.innerHTML = "Failed to read file";
+                        return;
+                    };
+
+                    reader.readAsText(file);
+                }
+            });
+
+        </script>
     </head>
 
     <body>
         <!-- Main form div -->
         <div class="container">
             <!--File input to let the user load an existing toml file -->
-            <div class="border border-primary rounded">
-                <label class="form-label ml-2 pt-2" for="id_existing_toml">Load an existing toml file</label>
-                <input type="file" class="form-control" id="id_existing_toml">
-                <script type="module">
-                    import {parse} from 'https://cdn.jsdelivr.net/npm/smol-toml@latest/dist/index.min.js';
-                    const file_input = document.getElementById('id_existing_toml');
-                    file_input.addEventListener('change', (event) => {
-                        // Read the toml and populate the form
-                        const file = event.target.files[0];
-
-                        if (file) {
-                            const reader = new FileReader();
-
-                            reader.onload = (e) => {
-                                let parsed_data = null;
-                                try {
-                                    parsed_data = parse(e.target.result);
-                                } catch (error) {
-                                    let error_text = document.getElementById("error_text")
-                                    error_text.innerHTML = "Invalid TOML file";
-                                    console.log("Setting error text");
-                                    return;
-                                }
-
-                                for (const key in parsed_data) {
-                                    const elem_id = 'id_' + key;
-                                    const elem = document.getElementById(elem_id);
-                                    if (elem == null) {continue;}
-                                    const value = parsed_data[key];
-
-                                    if (typeof value == "boolean") {
-                                        // Handle setting check box flags
-                                        $('#'+elem_id).prop('checked', value).change();
-                                    } else if (typeof value == "number") {
-                                        // Handle setting numeric slider flags
-                                        $('#'+elem_id).val(value).change();
-                                        $('#'+elem_id+'_text').val(value).change();
-                                    } else if (typeof value == "string") {
-                                        // Handle string types - choice selections/text boxes 
-                                        $('#'+elem_id).val(value)
-                                    } else if(value instanceof Array) {
-                                        // This is one of the list types. Convert the list to
-                                        // a string before setting the field
-                                        let text_str = "[";
-                                        let first_item = true;
-                                        for (const item of value) {
-                                            if (first_item) {
-                                                text_str += "'" + item + "'";
-                                            } else {
-                                                text_str += ", " + "'" + item + "'";
-                                            }
-                                            first_item = false;
-                                        }
-                                        text_str += "]";
-                                        $('#'+elem_id).val(text_str);
-                                    }
-                                }
-                            };
-
-                            reader.onerror = (e) => {
-                                console.error("Error on file read:", e.target.error);
-                            };
-
-                            reader.readAsText(file);
-                        }
-                    });
-                </script>
+            <div>
+            <!--<div class="border border-primary rounded">-->
                 <div>
                     <!-- Error text if form parsing fails on the backend -->
                     <h3 id="error_text" style="color: red">{{error_text}}</h3>
                 </div>
             </div>
 
-            <form name="toml_gen_form" id="toml_gen_form" action="{% url 'generator:toml_gen' %}" method="post" enctype="multipart/form-data" onsubmit="prepareform()">
+            <form name="toml_gen_form" id="toml_gen_form" action="{% url 'generator:toml_gen' %}" method="post" enctype="multipart/form-data">
                 {% csrf_token %}
 
                 <!-- The nav tabs are auto-generated -->

@@ -25,9 +25,9 @@ class TomlFormAutogen():
 
         # create the instructions page
         temp = self._write_instructions_tab()
-        self.html_buffers['Getting Started'] = temp
-        self._write_nav_tab_entry('Getting Started', True)
-        self._write_tab_page_entry('Getting Started', True)
+        self.html_buffers['Getting_Started'] = temp
+        self._write_nav_tab_entry('Getting_Started', True)
+        self._write_tab_page_entry('Getting_Started', True)
 
     @staticmethod
     def _init_reset_func_buffer() -> io.StringIO:
@@ -215,8 +215,16 @@ class TomlFormAutogen():
                 This form can be used to create or modify settings files for Rando-Dalton Imperial.  The tabs at the top of the form group related settings and all settings in this form start out set to the randomizer default values.  When you have finished adjusting settings to your liking, click the "Generate settings file" button at the bottom of the page to download your toml file.  This file can be used on the <a href="{% url "generator:index" %}" target="_blank">generator page</a> to generate a seed.
               </p>
               <p>
-                Use the file chooser at the top of the page to load and modify an existing settings file.  The form controls will be updated to reflect the fields in the toml.  The form is not reset when loading a file, so you can load a settings toml and then load a personlization file to combine multiple settings files.  If you want to reset the form, click the "Reset to defaults" button at the bottom of the page.
+                Use the preset buttons or file chooser below to load existing settings.  The form controls will be updated to reflect the fields in the chosen preset/file.  The form is not reset when doing this, so you can load a preset or settings file and then load a personlization file to combine multiple settings files.  If you want to reset the form, click the "Reset to defaults" button at the bottom of the page.
               </p>
+
+              <div class="border border-secondary rounded">
+                <label class="form-label ml-2 pt-2" for="id_existing_toml">Load a preset or a toml file</label>
+                <div>
+                  {% include "generator/toml_gen/preset_buttons.html" %}
+                </div>
+                <input type="file" class="form-control" id="id_existing_toml" form="none">
+              </div>
             </div>
         '''
         buffer.write(instructions)
@@ -236,6 +244,8 @@ class TomlFormAutogen():
             self.html_buffers[section_name] = html_buffer
             self._write_nav_tab_entry(section_name, False)
             self._write_tab_page_entry(section_name, False)
+        else:
+            html_buffer = self.html_buffers[section_name]
 
         self.pyform_buffer.write(f'\n    # {section_name}\n')
         self.reset_function_buffer.write(f'\n// {section_name}\n')
@@ -270,7 +280,7 @@ class TomlFormAutogen():
                 self._create_text_control(flag, spec, html_buffer)
             elif isinstance(spec, dict):
                 # This dictionary contains subsections with their own arg specs
-                self.generate_form_section(flag, spec)
+                self.generate_form_section(section_name, spec)
             else:
                 print(f'Unknown arg type for {flag}')
 
