@@ -110,7 +110,7 @@ class TomlFormAutogen():
             <div class="form-group" data-toggle="tooltip" title="{help_text}">
               <label for="{{{{form.{flag_name}.id_for_label}}}}" class="form-label mr-2">{flag_name}</label>
               <input type="range" class="form-range" name="{{{{form.{flag_name}.name}}}}" id="{{{{form.{flag_name}.id_for_label}}}}" min="{spec.min_value}" max="{spec.max_value}" step="{spec.interval}" value="{spec.default_value}">
-              <input type="text" id="{{{{form.{flag_name}.id_for_label}}}}_text" form="none" size="1" value="{spec.default_value}">
+              <input type="text" id="{{{{form.{flag_name}.id_for_label}}}}_text" form="none" size="2" value="{spec.default_value}">
             </div>
 
             <script>
