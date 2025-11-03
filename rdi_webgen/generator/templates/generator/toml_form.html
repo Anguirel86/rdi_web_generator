@@ -62,7 +62,7 @@
                 const response = await fetch("{{request.scheme}}://{{request.get_host}}/fetch_preset/" + name);
                 if (!response.ok) {
                     // Something went wrong with the request
-                    let error_text = document.getElementById("error_text")
+                    let error_text = document.getElementById("error_text");
                     error_text.innerHTML = "Failed to fetch preset file";
                     return;
                 }
@@ -72,11 +72,18 @@
                 try {
                     parsed_data = parse(data);
                 } catch (error) {
-                    let error_text = document.getElementById("error_text")
+                    let error_text = document.getElementById("error_text");
                     error_text.innerHTML = "Invalid preset file";
                     return;
                 }
-                populateFormFromTomlData(parsed_data);
+
+                let status_text = document.getElementById("status_text");
+                try {
+                    populateFormFromTomlData(parsed_data);
+                    status_text.innerHTML = "Loaded preset: " + name;
+                } catch (error) {
+                    status_text.innerHTML = "Failed to load preset: " + name;
+                }
             }
             // Make the function available outside this script module
             window.setPreset = setPreset;
@@ -100,7 +107,14 @@
                             error_text.innerHTML = "Invalid TOML file";
                             return;
                         }
-                        populateFormFromTomlData(parsed_data);
+
+                        let status_text = document.getElementById("status_text");
+                        try {
+                            populateFormFromTomlData(parsed_data);
+                            status_text.innerHTML = "Loaded custom toml file: " + file.name;
+                        } catch (error) {
+                            status_text.innerHTML = "Failed to load custom toml file: " + file.name;
+                        }
                     };
 
                     reader.onerror = (e) => {
@@ -119,13 +133,9 @@
     <body>
         <!-- Main form div -->
         <div class="container">
-            <!--File input to let the user load an existing toml file -->
             <div>
-            <!--<div class="border border-primary rounded">-->
-                <div>
-                    <!-- Error text if form parsing fails on the backend -->
-                    <h3 id="error_text" style="color: red">{{error_text}}</h3>
-                </div>
+                <!-- Error text if form parsing fails on the backend -->
+                <h3 id="error_text" style="color: red">{{error_text}}</h3>
             </div>
 
             <form name="toml_gen_form" id="toml_gen_form" action="{% url 'generator:toml_gen' %}" method="post" enctype="multipart/form-data">

@@ -38,6 +38,10 @@ class TomlFormAutogen():
         buffer.write('''
             <script>
                 function reset_to_default() {
+
+                let status_text = document.getElementById("status_text");
+                status_text.innerHTML = "";
+
         ''')
         return buffer
 
@@ -224,6 +228,9 @@ class TomlFormAutogen():
                   {% include "generator/toml_gen/preset_buttons.html" %}
                 </div>
                 <input type="file" class="form-control" id="id_existing_toml" form="none">
+              </div>
+              <div>
+                <h4 id="status_text" style="color: green"></h4>
               </div>
             </div>
         '''
