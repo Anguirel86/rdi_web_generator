@@ -354,7 +354,7 @@ class TomlFormAutogen():
                         f'    {flag} = forms.FloatField(required=False)\n')
                 self._create_slider_control(flag, spec, html_buffer)
             elif isinstance(spec, argumenttypes.DiscreteCategorialArg):
-                # TODO: Be smarter about max_length - 50 should be ok for now
+                # TODO: Be smarter about max_length
                 self.pyform_buffer.write(
                     f'    {flag} = forms.CharField(max_length=50, required=False)\n')
                 self._create_choice_control(flag, spec, html_buffer)
@@ -366,8 +366,10 @@ class TomlFormAutogen():
                 self._create_multiselect_control(
                     flag, spec, html_buffer)
             elif isinstance(spec, argumenttypes.StringArgument):
+                # TODO: Be smarter about max_length
+                #       Palletes can be 84, so 100 should be ok for now
                 self.pyform_buffer.write(
-                    f'    {flag} = forms.CharField(max_length=50, required=False)\n')
+                    f'    {flag} = forms.CharField(max_length=100, required=False)\n')
                 self._create_text_control(flag, spec, html_buffer)
             elif isinstance(spec, dict):
                 # This dictionary contains subsections with their own arg specs
