@@ -38,18 +38,23 @@
                     } else if(value instanceof Array) {
                         // This is one of the list types. Convert the list to
                         // a string before setting the field
-                        let text_str = "[";
+                        let text_str = "";
                         let first_item = true;
                         for (const item of value) {
                             if (first_item) {
-                                text_str += "'" + item + "'";
+                                text_str +=  key + "_" +item;
                             } else {
-                                text_str += ", " + "'" + item + "'";
+                                text_str += ", " + key + "_" + item;
                             }
                             first_item = false;
                         }
-                        text_str += "]";
-                        $('#'+elem_id).val(text_str);
+                        // Set the actual form field
+                        $('#'+elem_id).val("[" + text_str + "]");
+
+                        // Set the selection lists
+                        let srcListId = key + "_srclist";
+                        let destListId = key + "_destlist";
+                        resetMultiSelectList(srcListId, destListId, text_str);
                     }
                 }
             }
@@ -83,9 +88,11 @@
                         status_text.innerHTML = "Loaded preset: " + name;
                     } catch (error) {
                         status_text.innerHTML = "Failed to load preset: " + name;
+                        console.log(error)
                     }
                 } catch (error) {
                     status_text.innerHTML = "Unable to fetch preset data";
+                    console.log(error)
                 }
             }
             // Make the function available outside this script module
@@ -240,7 +247,8 @@
                 // Move all items in the itemList over to the dest list
                 const itemIdList = itemList.split(",");
                 for (const elemId of itemIdList) {
-                    const elem = document.getElementById(elemId);
+                    let trimmedName = elemId.replace(/ /g, "");
+                    const elem = document.getElementById(trimmedName);
                     destDiv.appendChild(elem);
                 }
 
