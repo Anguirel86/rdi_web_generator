@@ -234,9 +234,8 @@
                 const destDiv = document.getElementById(destId);
 
                 // Move all elements to the source list
-                const children = destDiv.children;
-                for (let i = 0; i < children.length; i++) {
-                    srcDiv.appendChild(children[i]);
+                while (destDiv.firstChild) {
+                    srcDiv.appendChild(destDiv.firstChild);
                 }
 
                 if (itemList === "") {
