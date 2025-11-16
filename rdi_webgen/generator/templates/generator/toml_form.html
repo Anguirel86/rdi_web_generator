@@ -38,23 +38,26 @@
                     } else if(value instanceof Array) {
                         // This is one of the list types. Convert the list to
                         // a string before setting the field
-                        let text_str = "";
+                        let form_str = "";
+                        let list_str = "";
                         let first_item = true;
                         for (const item of value) {
                             if (first_item) {
-                                text_str +=  key + "_" +item;
+                                list_str +=  key + "_" +item;
+                                form_str += item;
                             } else {
-                                text_str += ", " + key + "_" + item;
+                                list_str += ", " + key + "_" + item;
+                                form_str += ", "+ item;
                             }
                             first_item = false;
                         }
                         // Set the actual form field
-                        $('#'+elem_id).val("[" + text_str + "]");
+                        $('#'+elem_id).val("[" + form_str + "]");
 
                         // Set the selection lists
                         let srcListId = key + "_srclist";
                         let destListId = key + "_destlist";
-                        resetMultiSelectList(srcListId, destListId, text_str);
+                        resetMultiSelectList(srcListId, destListId, list_str);
                     }
                 }
             }
