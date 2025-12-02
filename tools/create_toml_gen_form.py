@@ -179,14 +179,14 @@ class TomlFormAutogen():
         text_control = f'''
             <div class="form-group" data-toggle="tooltip" title="{help_text}">
               <label for="{{{{form.{flag_name}.id_for_label}}}}">{display_name}</label>
-              <input class="form-control" name="{{{{form.{flag_name}.name}}}}" id="{{{{form.{flag_name}.id_for_label}}}}" type="text">
+              <input class="form-control" name="{{{{form.{flag_name}.name}}}}" id="{{{{form.{flag_name}.id_for_label}}}}" type="text" value="{spec.default_value}">
             </div>
         '''
 
         html_buffer.write(text_control)
 
         self.reset_function_buffer.write(
-            f'$("#{{{{form.{flag_name}.id_for_label}}}}").val("");\n')
+            f'$("#{{{{form.{flag_name}.id_for_label}}}}").val("{spec.default_value}");\n')
 
     def _create_multiselect_control(
             self,
@@ -263,31 +263,6 @@ class TomlFormAutogen():
             f'$("#{{{{form.{flag_name}.id_for_label}}}}").val("{default_form_data.getvalue()}");\n')
         self.reset_function_buffer.write(
             f'resetMultiSelectList("{src_list_id}", "{dest_list_id}", "{default_selection.getvalue()}");\n')
-
-    def _create_multiselect_control_temp(
-            self,
-            flag_name: str,
-            spec: argumenttypes.MultipleDiscreteSelection,
-            html_buffer: io.StringIO):
-        """
-        Generate HTML for a multiselect choice input field
-        """
-        # This one is going to be complicated.  For now just set the default values
-        # to a text field and don't let the user edit them.
-        help_text = self.sanitize_string(spec.help_text)
-        html_buffer.write(
-            f'<div class="form-group" data-toggle="tooltip" title="{help_text}">\n')
-        html_buffer.write(f'  <label for="{{{{form.{flag_name}.id_for_label}}}}">{
-                          flag_name}</label>\n')
-
-        # Build up the big string of default values
-        default_selection = spec.get_toml_value(spec.default_value)
-        html_buffer.write(f'  <input class="form-control" type="text" name="{{{{form.{
-                          flag_name}.name}}}}" id="{{{{form.{flag_name}.id_for_label}}}}" value="{default_selection}" readonly>\n')
-        html_buffer.write('</div>\n')
-
-        self.reset_function_buffer.write(
-            f'$("#{{{{form.{flag_name}.id_for_label}}}}").val({default_selection});\n')
 
     @staticmethod
     def _write_instructions_tab() -> io.StringIO:
