@@ -182,17 +182,22 @@ class GenerateView(FormView):
             except Exception as ex:
                 raise Exception('Invalid personalization file: ' + str(ex))
 
+            personal_opts = tomloptions.toml_data_to_args(personalization_dict)
+            personal_parser = argparse.ArgumentParser()
+            personal_parser.add_argument_group(
+                PostRandoOptions.add_group_to_parser(personal_parser))
+            namespace = personal_parser.parse_args(personal_opts)
             personal_settings = PostRandoOptions.extract_from_namespace(
-                argparse.Namespace(**personalization_dict))
+                namespace)
 
         return personal_settings
 
-    def generate(self, settings, personal_settings):
+    def generate(self, settings_dict, personal_settings):
         """
         Generate a randomized game based on the given settings files
         """
         try:
-            args = tomloptions.toml_data_to_args(settings)
+            args = tomloptions.toml_data_to_args(settings_dict)
             settings = ctrando.randomizer.extract_settings(*args)
             if personal_settings is not None:
                 settings.post_random_options = personal_settings
