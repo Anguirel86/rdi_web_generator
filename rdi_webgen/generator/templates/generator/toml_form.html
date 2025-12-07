@@ -269,7 +269,7 @@
                 <h3 id="error_text" style="color: red">{{error_text}}</h3>
             </div>
 
-            <form name="toml_gen_form" id="toml_gen_form" action="{% url 'generator:toml_gen' %}" method="post" enctype="multipart/form-data">
+            <form name="toml_gen_form" id="toml_gen_form" action="{% url 'generator:toml_gen' %}" method="post" enctype="multipart/form-data" target="_blank">
                 {% csrf_token %}
 
                 <!-- The nav tabs are auto-generated -->
