@@ -96,6 +96,8 @@ class TomlGenView(FormView):
                         temp = [x.replace("'", '').strip()
                                 for x in value[1:-1].split(',')]
                         data_dict[name] = temp
+                    else:
+                        data_dict[name] = []
                 elif len(value) > 0:
                     # All non-list strings.  Skip empty fields
                     data_dict[name] = value
