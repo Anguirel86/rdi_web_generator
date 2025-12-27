@@ -342,9 +342,8 @@ class TomlFormAutogen():
                     flag, spec, html_buffer)
             elif isinstance(spec, argumenttypes.StringArgument):
                 # TODO: Be smarter about max_length
-                #       Palletes can be 84, so 100 should be ok for now
                 self.pyform_buffer.write(
-                    f'    {flag} = forms.CharField(max_length=100, required=False)\n')
+                    f'    {flag} = forms.CharField(max_length=500, required=False)\n')
                 self._create_text_control(flag, spec, html_buffer)
             elif isinstance(spec, dict):
                 # This dictionary contains subsections with their own arg specs
