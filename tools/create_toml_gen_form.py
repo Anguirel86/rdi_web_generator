@@ -157,9 +157,11 @@ class TomlFormAutogen():
                 <select class="form-control" name="{{{{form.{flag_name}.name}}}}" id="{{{{form.{flag_name}.id_for_label}}}}">
         ''')
         for choice in spec.choices:
+            choice_str = spec.str_from_choice_fn(choice)
             selected_string = 'selected' if choice == spec.default_value else ''
-            html_buffer.write(f'    <option value="{choice}" {
-                selected_string}>{choice}</option>\n')
+            html_buffer.write(f'    <option value="{choice_str}" {
+                selected_string}>{choice_str}</option>\n')
+
         html_buffer.write('  </select>\n')
         html_buffer.write('</div>\n')
 

@@ -14,6 +14,7 @@ import ctrando
 import ctrando.randomizer
 from ctrando.arguments import arguments, tomloptions
 from ctrando.arguments.postrandooptions import PostRandoOptions
+from ctrando.arguments.plandooptions import PlandoException
 
 # standard lib imports
 import argparse
@@ -114,10 +115,10 @@ class TomlGenView(FormView):
         try:
             args = tomloptions.toml_data_to_args(toml_dict)
             settings = ctrando.randomizer.extract_settings(*args)
-        except ValueError as ve:
+        except (ValueError, PlandoException) as ex:
             context = {
                 'form': form,
-                'error_text': str(ve)
+                'error_text': str(ex)
             }
             return render(self.request, 'generator/toml_form.html', context)
 
