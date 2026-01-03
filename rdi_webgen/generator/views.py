@@ -121,6 +121,22 @@ class TomlGenView(FormView):
                 'error_text': str(ex)
             }
             return render(self.request, 'generator/toml_form.html', context)
+        except KeyError as ex:
+            context = {
+                'form': form,
+                'error_text': 'Invalid key value: ' + str(ex)
+            }
+            return render(self.request, 'generator/toml_form.html', context)
+        except Exception as ex:
+            # Catch-all exception for errors we don't expect
+            # TODO: Combine all into a general exception?  Or do we want to keep
+            #       looking for specific exception to handle different errors in
+            #       different ways?
+            context = {
+                'form': form,
+                'error_text': 'Unexpected error: ' + str(ex)
+            }
+            return render(self.request, 'generator/toml_form.html', context)
 
         # If we made it here, the form is good
         # Package it up and send it to the user as a toml file
