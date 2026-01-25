@@ -127,6 +127,7 @@
                             status_text.innerHTML = "Loaded custom toml file: " + file.name;
                         } catch (error) {
                             status_text.innerHTML = "Failed to load custom toml file: " + file.name;
+                            console.log(error)
                         }
                     };
 
@@ -251,7 +252,10 @@
                 for (const elemId of itemIdList) {
                     let trimmedName = elemId.replace(/ /g, "");
                     const elem = document.getElementById(trimmedName);
-                    destDiv.appendChild(elem);
+                    // Make sure the element exists before tryinng to add it
+                    if (elem != null) {
+                        destDiv.appendChild(elem);
+                    }
                 }
 
             }
