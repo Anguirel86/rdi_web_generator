@@ -114,7 +114,7 @@ class TomlGenView(FormView):
         toml_dict = tomllib.load(io.BytesIO(toml_data.getvalue().encode()))
         try:
             args = tomloptions.toml_data_to_args(toml_dict)
-            settings = ctrando.randomizer.extract_settings(*args)
+            _ = ctrando.randomizer.extract_settings(*args)
         except (ValueError, PlandoException) as ex:
             context = {
                 'form': form,

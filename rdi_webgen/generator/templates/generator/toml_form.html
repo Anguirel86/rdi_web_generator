@@ -57,7 +57,7 @@
                         // Set the selection lists
                         let srcListId = key + "_srclist";
                         let destListId = key + "_destlist";
-                        resetMultiSelectList(srcListId, destListId, list_str);
+                        resetMultiSelectList(srcListId, destListId, list_str, allowsDuplicates(key));
                     }
                 }
             }
@@ -177,6 +177,22 @@
                 chosen_list.value = chosenItems;
             }
 
+            function addClonedElement(elem, dest) {
+                // Find the first unused id
+                let count = 1;
+                while (document.getElementById(elem.id + "_" + count) != null) {
+                    count++;
+                }
+                new_elem = elem.cloneNode(true);
+                new_elem.id = elem.id + "_" + count;
+                // Add a limited click handler to remove the element if clicked
+                new_elem.addEventListener('click', function(ie) {
+                    let temp = $('#'+ie.target.id)[0];
+                    temp.remove();
+                });
+                dest.appendChild(new_elem);
+            }
+
             //
             // Add listeners to the components for selecting a list of items.
             // 
@@ -184,8 +200,9 @@
             //   dest_id: id of the list displaying the selected items
             //   search_id: id of the search/filter input for the src list
             //   chosen_items_id: id of the form element that stores the actual data to be submitted
+            //   allow_multiple: Allow a user to select multiple of an item
             //
-            function addSelectionListListeners(src_id, dest_id, search_id, chosen_items_id) {
+            function addSelectionListListeners(src_id, dest_id, search_id, chosen_items_id, allow_multiple) {
                 const src = document.getElementById(src_id);
                 const dest = document.getElementById(dest_id);
                 const search = document.getElementById(search_id);
@@ -195,11 +212,27 @@
                 $('#'+src_id + ' .movable').map(function() {
                     this.addEventListener('click', function(e) {
                         let elem = $('#'+e.target.id)[0];
-                        if (elem.parentElement == dest) {
-                            src.appendChild(elem);
+
+                        if (allow_multiple) {
+                            // This list allows multiple of the same item
+                            if (elem.parentElement == dest) {
+                                // Just delete the chosen element from dest
+                                elem.remove();
+                            } else {
+                                // Add a copy of the item to dest
+                                addClonedElement(elem, dest);
+                            }
                         } else {
-                            dest.appendChild(elem);
+                            // List does not allow multiples
+                            if (elem.parentElement == dest) {
+                                // Move element from dest to source
+                                src.appendChild(elem);
+                            } else {
+                                // Move elem from source to dest
+                                dest.appendChild(elem);
+                            }
                         }
+
                         updateSelectedList(dest_id, chosen_items_id);
                     });
                 });
@@ -207,11 +240,27 @@
                 $('#'+dest_id + ' .movable').map(function() {
                     this.addEventListener('click', function(e) {
                         let elem = $('#'+e.target.id)[0];
-                        if (elem.parentElement == dest) {
-                            src.appendChild(elem);
+
+                        if (allow_multiple) {
+                            // This list allows multiple of the same item
+                            if (elem.parentElement == dest) {
+                                // Just delete the chosen element from dest
+                                elem.remove();
+                            } else {
+                                // Add a copy of the item to dest
+                                addClonedElement(elem, dest);
+                            }
                         } else {
-                            dest.appendChild(elem);
+                            // List does not allow multiples
+                            if (elem.parentElement == dest) {
+                                // Move element from dest to source
+                                src.appendChild(elem);
+                            } else {
+                                // Move elem from source to dest
+                                dest.appendChild(elem);
+                            }
                         }
+
                         updateSelectedList(dest_id, chosen_items_id);
                     });
                 });
@@ -233,13 +282,18 @@
                 });
             }
 
-            function resetMultiSelectList(srcId, destId, itemList) {
+            function resetMultiSelectList(srcId, destId, itemList, allow_multiple) {
                 const srcDiv = document.getElementById(srcId);
                 const destDiv = document.getElementById(destId);
 
                 // Move all elements to the source list
+                // or delete them if multiples are allowed
                 while (destDiv.firstChild) {
-                    srcDiv.appendChild(destDiv.firstChild);
+                    if (allow_multiple) {
+                        destDiv.firstChild.remove();
+                    } else {
+                        srcDiv.appendChild(destDiv.firstChild);
+                    }
                 }
 
                 if (itemList === "") {
@@ -252,9 +306,13 @@
                 for (const elemId of itemIdList) {
                     let trimmedName = elemId.replace(/ /g, "");
                     const elem = document.getElementById(trimmedName);
-                    // Make sure the element exists before tryinng to add it
+                    // Make sure the element exists before trying to add it
                     if (elem != null) {
-                        destDiv.appendChild(elem);
+                        if (allow_multiple) {
+                            addClonedElement(elem, destDiv);
+                        } else {
+                            destDiv.appendChild(elem);
+                        }
                     }
                 }
 
@@ -262,6 +320,9 @@
         </script>
 
         {% include "generator/toml_gen/reset_function.html" %}
+
+        <!-- Kind of annoying, but we need a way to look this up for loading tomls -->
+        {% include "generator/toml_gen/allows_duplicates.html" %}
 
     </head>
 

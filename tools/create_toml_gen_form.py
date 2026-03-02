@@ -4,6 +4,7 @@ returned by the randomizer arguments package.  The form contains a tab for
 each of the major groupings of rando arguments.
 """
 
+from collections import Counter
 import io
 import os
 
@@ -22,6 +23,11 @@ class TomlFormAutogen():
 
         # Dictionary of page names to page buffers
         self.html_buffers = {}
+
+        # Keep track of which multiselect lists allow duplicate item selection.
+        # These will be needed for a lookup function used by the TOML file
+        # loading routine.
+        self.multi_select_lists_with_dups = []
 
         # create the instructions page
         temp = self._write_instructions_tab()
@@ -214,17 +220,29 @@ class TomlFormAutogen():
 
         first_elem = True
         for elem in spec.choices:
-            if elem not in spec.default_value:
+            # If this list allows duplicates then we need to put all
+            # choices in the source list
+            if spec.allow_duplicates or elem not in spec.default_value:
                 name = spec.str_from_choice_fn(elem)
                 src_elems.write(f'<span id="{flag_name}_{
                     name}" class="movable border border-secondary rounded pl-1 pr-1">{name}</span>\n')
+
+        elem_counts = Counter()
 
         default_form_data.write('[')
         first_elem = True
         for elem in spec.default_value:
             name = spec.str_from_choice_fn(elem)
-            dest_elems.write(f'<span id="{flag_name}_{
-                name}" class="movable border border-secondary rounded pl-1 pr-1">{name}</span>\n')
+            if spec.allow_duplicates:
+                # Get a unique ID for each copy of the item in the chosen list
+                elem_counts.update({name: 1})
+                count_val = elem_counts[flag_name]
+                elem_id = f"{flag_name}_{name}_{count_val}"
+            else:
+                elem_id = f"{flag_name}_{name}"
+
+            dest_elems.write(f'<span id="{
+                             elem_id}" class="movable border border-secondary rounded pl-1 pr-1">{name}</span>\n')
 
             if not first_elem:
                 default_selection.write(',')
@@ -234,6 +252,11 @@ class TomlFormAutogen():
             first_elem = False
 
         default_form_data.write(']')
+
+        allow_dups = 'true' if spec.allow_duplicates else 'false'
+
+        if spec.allow_duplicates:
+            self.multi_select_lists_with_dups.append(flag_name)
 
         select_control = f'''
             <label data-toggle="tooltip" title="{help_text}">{display_name}:</label>
@@ -255,7 +278,7 @@ class TomlFormAutogen():
             <input type="hidden" id="{{{{form.{flag_name}.id_for_label}}}}" name="{{{{form.{flag_name}.name}}}}" value="{default_form_data.getvalue()}">
             <script>
                 addSelectionListListeners(
-                    "{src_list_id}", "{dest_list_id}", "{searchbox_id}", "{{{{form.{flag_name}.id_for_label}}}}");
+                    "{src_list_id}", "{dest_list_id}", "{searchbox_id}", "{{{{form.{flag_name}.id_for_label}}}}", {allow_dups});
             </script>
         '''
 
@@ -376,11 +399,38 @@ class TomlFormAutogen():
             </div>
         ''')
 
+    def _get_allows_duplicates_fn_buffer(self) -> io.StringIO:
+        """
+        Create the function to handle a lookup of multiselect
+        lists that allow duplicate items.
+
+        This is needed for the function that loads an existing toml file
+        into the toml builder page since it won't have access to the
+        arg spec data.
+        """
+        buf = io.StringIO()
+        buf.write('''
+    <script>
+        function allowsDuplicates(flag) {
+            const flag_list = [\n''')
+
+        for flag in self.multi_select_lists_with_dups:
+            buf.write(f'                "{flag}",\n')
+
+        buf.write('''
+            ];
+            return flag_list.includes(flag);
+        }
+    </script>\n''')
+
+        buf.seek(0)
+        return buf
+
     def finalize_and_write_pages(self):
         """
         Finalize the page buffers and write everything to disk
         """
-        # generatre the Django form
+        # generate the Django form
         self.pyform_buffer.seek(0)
         os.mkdir('form_gen_output')
         with open('form_gen_output/toml_gen_form.py', 'w') as file:
@@ -410,6 +460,12 @@ class TomlFormAutogen():
         self.reset_function_buffer.seek(0)
         with open('form_gen_output/html/reset_function.html', 'w') as file:
             file.write(self.reset_function_buffer.read())
+
+        # Create the lookup function for multiselect lists that
+        # allow duplicate item selection
+        dup_buffer = self._get_allows_duplicates_fn_buffer()
+        with open('form_gen_output/html/allows_duplicates.html', 'w') as file:
+            file.write(dup_buffer.read())
 
 
 def main():
