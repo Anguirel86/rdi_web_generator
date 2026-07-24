@@ -4,14 +4,11 @@ returned by the randomizer arguments package.  The form contains a tab for
 each of the major groupings of rando arguments.
 """
 
-from collections import Counter
 import io
 import os
+from collections import Counter
 
-from ctrando.arguments import (
-    arguments,
-    argumenttypes
-)
+from ctrando.arguments import arguments, argumenttypes
 
 
 class TomlFormAutogen():
@@ -184,10 +181,11 @@ class TomlFormAutogen():
         """
         help_text = self.sanitize_string(spec.help_text)
         display_name = self.get_display_name(flag_name)
+        value = ' '.join(line.strip() for line in str(spec.default_value).split('\n') if line)
         text_control = f'''
             <div class="form-group" data-toggle="tooltip" title="{help_text}">
               <label for="{{{{form.{flag_name}.id_for_label}}}}">{display_name}</label>
-              <input class="form-control" name="{{{{form.{flag_name}.name}}}}" id="{{{{form.{flag_name}.id_for_label}}}}" type="text" value="{spec.default_value}">
+              <input class="form-control" name="{{{{form.{flag_name}.name}}}}" id="{{{{form.{flag_name}.id_for_label}}}}" type="text" value="{value}">
             </div>
         '''
 
@@ -195,6 +193,32 @@ class TomlFormAutogen():
 
         self.reset_function_buffer.write(
             f'$("#{{{{form.{flag_name}.id_for_label}}}}").val("{spec.default_value}");\n')
+
+    def _create_dist_control(
+            self,
+            flag_name: str,
+            spec: argumenttypes.DistArgument,
+            html_buffer: io.StringIO):
+        """
+        Generate HTML for a distribution input field
+        TODO: For now we're treating these the same as text fields
+        """
+        help_text = self.sanitize_string(spec.help_text)
+        display_name = self.get_display_name(flag_name)
+        default_value = spec.default_value
+        if default_value is None:
+            default_value = ""
+        text_control = f'''
+            <div class="form-group" data-toggle="tooltip" title="{help_text}">
+              <label for="{{{{form.{flag_name}.id_for_label}}}}">{display_name}</label>
+              <input class="form-control" name="{{{{form.{flag_name}.name}}}}" id="{{{{form.{flag_name}.id_for_label}}}}" type="text" value="{default_value}">
+            </div>
+        '''
+
+        html_buffer.write(text_control)
+
+        self.reset_function_buffer.write(
+            f'$("#{{{{form.{flag_name}.id_for_label}}}}").val("{default_value}");\n')
 
     def _create_multiselect_control(
             self,
@@ -370,6 +394,10 @@ class TomlFormAutogen():
                 self.pyform_buffer.write(
                     f'    {flag} = forms.CharField(max_length=500, required=False)\n')
                 self._create_text_control(flag, spec, html_buffer)
+            elif isinstance(spec, argumenttypes.DistArgument):
+                self.pyform_buffer.write(
+                    f'    {flag} = forms.CharField(max_length=500, required=False)\n')
+                self._create_dist_control(flag, spec, html_buffer)
             elif isinstance(spec, dict):
                 # This dictionary contains subsections with their own arg specs
                 self.generate_form_section(section_name, spec)
