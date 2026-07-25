@@ -93,9 +93,11 @@ class TomlFormAutogen():
         help_text = self.sanitize_string(spec.help_text)
         display_name = self.get_display_name(flag_name)
         toggle_control = f'''
-            <div class="form-group form-check pl-0" data-toggle="tooltip" title="{help_text}">
+            <div class="form-group form-check pl-0">
               <input type="checkbox" name="{{{{form.{flag_name}.name}}}}" id="{{{{form.{flag_name}.id_for_label}}}}" data-toggle="toggle" {default_string}>
-              <label for="{{{{form.{flag_name}.id_for_label}}}}">{display_name}</label>
+              <label class="font-weight-bold" for="{{{{form.{flag_name}.id_for_label}}}}">{display_name}
+                <i class="bi bi-question-circle" data-toggle="tooltip" title="{help_text}"></i>
+              </label>
             </div>
         '''
         html_buffer.write(toggle_control)
@@ -116,10 +118,14 @@ class TomlFormAutogen():
         help_text = self.sanitize_string(spec.help_text)
         display_name = self.get_display_name(flag_name)
         slider_control = f'''
-            <div class="form-group" data-toggle="tooltip" title="{help_text}">
-              <label for="{{{{form.{flag_name}.id_for_label}}}}" class="form-label mr-2">{display_name}</label>
-              <input type="range" class="form-range" name="{{{{form.{flag_name}.name}}}}" id="{{{{form.{flag_name}.id_for_label}}}}" min="{spec.min_value}" max="{spec.max_value}" step="{spec.interval}" value="{spec.default_value}">
-              <input type="text" id="{{{{form.{flag_name}.id_for_label}}}}_text" form="none" size="2" value="{spec.default_value}">
+            <div class="form-group my-3">
+              <label class="font-weight-bold" for="{{{{form.{flag_name}.id_for_label}}}}" class="form-label mr-2">{display_name}:
+                <i class="bi bi-question-circle" data-toggle="tooltip" title="{help_text}"></i>
+              </label>
+              <div style="display: flex; gap: 10px; align-items: center;">
+                <input type="range" class="form-range" name="{{{{form.{flag_name}.name}}}}" id="{{{{form.{flag_name}.id_for_label}}}}" min="{spec.min_value}" max="{spec.max_value}" step="{spec.interval}" value="{spec.default_value}">
+                <input type="text" id="{{{{form.{flag_name}.id_for_label}}}}_text" form="none" size="2" value="{spec.default_value}">
+              </div>
             </div>
 
             <script>
@@ -155,8 +161,10 @@ class TomlFormAutogen():
         help_text = self.sanitize_string(spec.help_text)
         display_name = self.get_display_name(flag_name)
         html_buffer.write(f'''
-            <div class="form-group" data-toggle="tooltip" title="{help_text}">
-                <label for="{{{{form.{flag_name}.id_for_label}}}}">{display_name}:</label>
+            <div class="form-group">
+                <label class="font-weight-bold" for="{{{{form.{flag_name}.id_for_label}}}}">{display_name}:
+                  <i class="bi bi-question-circle" data-toggle="tooltip" title="{help_text}"></i>
+                </label>
                 <select class="form-control" name="{{{{form.{flag_name}.name}}}}" id="{{{{form.{flag_name}.id_for_label}}}}">
         ''')
         for choice in spec.choices:
@@ -181,18 +189,20 @@ class TomlFormAutogen():
         """
         help_text = self.sanitize_string(spec.help_text)
         display_name = self.get_display_name(flag_name)
-        value = ' '.join(line.strip() for line in str(spec.default_value).split('\n') if line)
+        default_value = ' '.join(line.strip() for line in str(spec.default_value).split('\n') if line)
         text_control = f'''
-            <div class="form-group" data-toggle="tooltip" title="{help_text}">
-              <label for="{{{{form.{flag_name}.id_for_label}}}}">{display_name}</label>
-              <input class="form-control" name="{{{{form.{flag_name}.name}}}}" id="{{{{form.{flag_name}.id_for_label}}}}" type="text" value="{value}">
+            <div class="form-group">
+              <label class="font-weight-bold" for="{{{{form.{flag_name}.id_for_label}}}}">{display_name}
+                  <i class="bi bi-question-circle" data-toggle="tooltip" title="{help_text}"></i>
+              </label>
+              <input class="form-control" name="{{{{form.{flag_name}.name}}}}" id="{{{{form.{flag_name}.id_for_label}}}}" type="text" value="{default_value}">
             </div>
         '''
 
         html_buffer.write(text_control)
 
         self.reset_function_buffer.write(
-            f'$("#{{{{form.{flag_name}.id_for_label}}}}").val("{spec.default_value}");\n')
+            f'$("#{{{{form.{flag_name}.id_for_label}}}}").val("{default_value}");\n')
 
     def _create_dist_control(
             self,
@@ -209,8 +219,10 @@ class TomlFormAutogen():
         if default_value is None:
             default_value = ""
         text_control = f'''
-            <div class="form-group" data-toggle="tooltip" title="{help_text}">
-              <label for="{{{{form.{flag_name}.id_for_label}}}}">{display_name}</label>
+            <div class="form-group">
+              <label class="font-weight-bold" for="{{{{form.{flag_name}.id_for_label}}}}">{display_name}
+                  <i class="bi bi-question-circle" data-toggle="tooltip" title="{help_text}"></i>
+              </label>
               <input class="form-control" name="{{{{form.{flag_name}.name}}}}" id="{{{{form.{flag_name}.id_for_label}}}}" type="text" value="{default_value}">
             </div>
         '''
@@ -283,20 +295,28 @@ class TomlFormAutogen():
             self.multi_select_lists_with_dups.append(flag_name)
 
         select_control = f'''
-            <label data-toggle="tooltip" title="{help_text}">{display_name}:</label>
-            <div class="border border-primary rounded mb-4 pl-2 pr-2">
-                <div  class="mt-1" data-toggle="tooltip" title="{help_text}">
-                    <label for="{searchbox_id}">Search/Filter</label>
-                    <input type="text" id="{searchbox_id}" form="none" name="{searchbox_id}">
+            <label class="font-weight-bold">{display_name}:
+              <i class="bi bi-question-circle" data-toggle="tooltip" title="{help_text}"></i>
+            </label>
+            <div class="border rounded mb-4 pl-2 pr-2" style="border: gray;">
+                <div>
+                  <button style="width: 100%;" class="btn ml-auto dropdown-toggle text-right" type="button" data-toggle="collapse" data-target="#collapse-{flag_name}" aria-expanded="false" aria-controls="collapse-{flag_name}">
                 </div>
+                <div id="collapse-{flag_name}" class="collapse" data-bs-toggle="collapse" data-bs-target="#collapse-{flag_name}">
+                    <div  class="mt-1">
+                        <label for="{searchbox_id}">Search/Filter</label>
+                        <input type="text" id="{searchbox_id}" form="none" name="{searchbox_id}">
+                    </div>
 
-                <label>Possible:</label>
-                <div id="{src_list_id}" style="min-height: 25px; display: flex; flex-wrap: wrap;" class="border border-secondary rounded mb-2">
-                    {src_elems.getvalue()}
-                </div>
-                <label>Selected:</label>
-                <div id="{dest_list_id}" style="min-height: 25px; display: flex; flex-wrap: wrap;" class="border border-secondary rounded mb-2">
-                    {dest_elems.getvalue()}
+
+                    <label>Possible:</label>
+                    <div id="{src_list_id}" style="min-height: 25px; display: flex; flex-wrap: wrap;" class="border border-secondary rounded mb-2">
+                        {src_elems.getvalue()}
+                    </div>
+                    <label>Selected:</label>
+                    <div id="{dest_list_id}" style="min-height: 25px; display: flex; flex-wrap: wrap;" class="border border-secondary rounded mb-2">
+                        {dest_elems.getvalue()}
+                    </div>
                 </div>
             </div>
             <input type="hidden" id="{{{{form.{flag_name}.id_for_label}}}}" name="{{{{form.{flag_name}.name}}}}" value="{default_form_data.getvalue()}">

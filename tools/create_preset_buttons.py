@@ -1,7 +1,7 @@
 """
 This script autogenerates the html for the preset buttons on the
-main randomizer index page.  This allows the index page to always
-be up to date with the latest preset file changes.
+main randomizer index and TOML form generator pages.  This allows the
+index page to always be up to date with the latest preset file changes.
 """
 
 import io

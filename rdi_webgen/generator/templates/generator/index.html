@@ -76,7 +76,7 @@
                         </div>
                         <input type="file" class="form-control ml-2" id="{{form.settings_file.id_for_label}}" name="{{form.settings_file.name}}" onchange="settingsFileChanged()"/>
                         <input type="hidden" id="{{form.preset_file.id_for_label}}" name="{{form.preset_file.name}}">
-                        <p><a href="{% url 'generator:toml_form' %}" target="_blank">Create a custom settings file with our toml builder</a></p>
+                        <p class="ml-2 mr-2"><a href="{% url 'generator:toml_form' %}" target="_blank">Create a custom settings file with our toml builder</a></p>
 
                         <h5 class="card-header">2. (Optional) Add a personalization (.toml) file</h5>
                         <div class="form-group pr-4" data-toggle="tooltip" title="An optional toml file containing post-randomization settings to be applied in addition to the main settings file">
@@ -98,6 +98,8 @@
                 <h4 class="card-header">Resources</h4>
                 <ul class="card-text p-4">
                     <li><a href="https://discord.gg/VpYtzMSGRa">Join our Discord</a></li>
+                    <li><a href="https://ctrando.miraheze.org/wiki/Main_Page">RDI Wiki</a></li>
+                    <li><a href="https://github.com/graygooglitch/CTRandoTracker/releases">Poptracker/EmoTracker Pack</a></li>
                     <li><a href="https://docs.google.com/document/d/1lrpnDAR66YIaDHZmlTunPH5PR1_WosjCUYu11101Hvs/edit?tab=t.0#heading=h.y5mkdovjdrae">Beginner's Guide</a></li>
                 </ul>
             </div>
