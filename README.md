@@ -1,6 +1,6 @@
 # RDI Web Generator
 
-A web-based user interface for the Chrono Trigger Randomizer (ctrando) project. This repository provides a Django-powered frontend that allows users to interact with the Rando-Dalton Imperial randomizer through their browser and provides some basic information and resources for players.
+A web-based user interface for the Chrono Trigger Rando-Dalton Imperial (ctrando) project. This repository provides a Django-powered frontend that allows users to interact with the Rando-Dalton Imperial randomizer through their browser and provides some basic information and resources for players.
 
 - [RDI home page and web generator](https://ctrando.com)
 - [CTRando (RDI) repository](https://github.com/pseudoarc/ctrando)
@@ -14,13 +14,15 @@ This repository contains several key directories:
   
 - **Flips** (submodule) - A utility tool for generating patch files, used during the randomization workflow.
 
+- **rdi_webgen** - The Django web app code for this application.
+
 - **deploy** - Docker configurations and deployment scripts for running the site in a containerized environment.
 
 - **tools** - Additional utilities and helper scripts for generating site pages, form controls, and randomizer assets.
 
 ## Running the Site
 
-This project uses Docker for deployment. See the [deploy](../deploy) directory for container configurations and instructions.
+This project uses Docker for deployment. See the [deploy](./deploy) directory for container configurations and instructions.
 
 ## License
 
