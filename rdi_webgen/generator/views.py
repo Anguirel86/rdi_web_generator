@@ -1,32 +1,29 @@
 # django imports
-from django.shortcuts import render
-from django.http import FileResponse, HttpResponse, HttpResponseNotFound
+# standard lib imports
+import argparse
+import importlib.resources
+import io
+import os
+import tempfile
+import typing
 from wsgiref.util import FileWrapper
+from zipfile import ZipFile
 
+# RDI rando imports
+import ctrando
+import ctrando.randomizer
+import toml
+import tomllib
+from ctrando.arguments import arguments, tomloptions
+from ctrando.arguments.plandooptions import PlandoException
+from ctrando.arguments.postrandooptions import PostRandoOptions
+from django.http import FileResponse, HttpResponse, HttpResponseNotFound
+from django.shortcuts import render
 from django.views import View
 from django.views.generic import FormView
 
 from .forms import GeneratorForm
 from .toml_gen_form import TomlGenForm
-
-# RDI rando imports
-import ctrando
-import ctrando.randomizer
-from ctrando.arguments import arguments, tomloptions
-from ctrando.arguments.postrandooptions import PostRandoOptions
-from ctrando.arguments.plandooptions import PlandoException
-
-# standard lib imports
-import argparse
-import importlib.resources
-from zipfile import ZipFile
-import io
-import os
-import tempfile
-import toml
-import tomllib
-import traceback
-import typing
 
 
 class IndexView(View):
@@ -138,15 +135,40 @@ class TomlGenView(FormView):
             }
             return render(self.request, 'generator/toml_form.html', context)
 
+
         # If we made it here, the form is good
-        # Package it up and send it to the user as a toml file
-        # NOTE: toml content type is application/toml, which implies it's
-        #       meant to be read by an application.  Going to use text/plain
-        #       for now just to ensure it's treated as a text file in browsers
-        toml_data.seek(0)
-        content = FileWrapper(toml_data)
-        response = HttpResponse(content, content_type='text/plain')
-        response['Content-Disposition'] = 'attachment; filename=settings.toml'
+        # Package it up and send it to the user in the requested file format
+        if "toml_gen" in self.request.POST:
+            # The user wants a toml file
+            # NOTE: toml content type is application/toml, which implies it's
+            #       meant to be read by an application.  Going to use text/plain
+            #       for now just to ensure it's treated as a text file in browsers
+            toml_data.seek(0)
+            content = FileWrapper(toml_data)
+            response = HttpResponse(content, content_type='text/plain')
+            response['Content-Disposition'] = 'attachment; filename=settings.toml'
+        elif "yaml_gen" in self.request.POST:
+            # The user wants a yaml file
+            # Add the AP specific fields and format the dictionary for AP
+            ap_dict = {}
+            ap_dict["name"] = "Player{number}"
+            ap_dict["game"] = "Chrono Trigger Rando-Dalton Imperial"
+            ap_dict["requires"] = "0.6.8"
+            ap_dict["Chrono Trigger Rando-Dalton Imperial"] = data_dict
+            import yaml
+            yaml_data = io.StringIO()
+            yaml.dump(ap_dict, yaml_data, sort_keys=False)
+            yaml_data.seek(0)
+            content = FileWrapper(yaml_data)
+            response = HttpResponse(content, content_type='text/plain')
+            response['Content-Disposition'] = 'attachment; filename=settings.yaml'
+        else:
+            context = {
+                'form': form,
+                'error_text': "Unknown file type request"
+            }
+            return render(self.request, 'generator/toml_form.html', context)
+            # Error
 
         return response
 
