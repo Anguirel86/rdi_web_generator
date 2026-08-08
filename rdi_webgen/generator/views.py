@@ -14,7 +14,7 @@ import ctrando
 import ctrando.randomizer
 import toml
 import tomllib
-from ctrando.arguments import arguments, tomloptions
+from ctrando.arguments import arguments, argumenttypes, tomloptions
 from ctrando.arguments.plandooptions import PlandoException
 from ctrando.arguments.postrandooptions import PostRandoOptions
 from django.http import FileResponse, HttpResponse, HttpResponseNotFound
@@ -79,6 +79,29 @@ class TomlGenView(FormView):
     Handle actual TOML generation
     """
     form_class = TomlGenForm
+
+    @classmethod
+    def flatten_dict(cls, dict_data):
+        """
+        Flatten the dictionary to a single level
+        """
+        result = {}
+        for key, value in dict_data.items():
+            if isinstance(value, dict) and value:
+                result.update(cls.flatten_dict(value))
+            else:
+                result[key] = value
+        return result
+
+    def adjust_float_values(self, settings_data):
+        """
+        Float values need to be multiplied by 100 when converting to yaml.
+        AP does not support a float type, so this is a hack to get around that.
+        """
+        arg_specs = self.flatten_dict(arguments.Settings.get_argument_spec())
+        for flag_name, arg_spec in arg_specs.items():
+            if isinstance(arg_spec, argumenttypes.DiscreteNumericalArg) and arg_spec.type_fn is float:
+                settings_data[flag_name] = int(float(settings_data[flag_name]) * 100)
 
     def form_valid(self, form):
 
@@ -150,10 +173,12 @@ class TomlGenView(FormView):
         elif "yaml_gen" in self.request.POST:
             # The user wants a yaml file
             # Add the AP specific fields and format the dictionary for AP
+            self.adjust_float_values(data_dict)
             ap_dict = {}
             ap_dict["name"] = "Player{number}"
             ap_dict["game"] = "Chrono Trigger Rando-Dalton Imperial"
-            ap_dict["requires"] = "0.6.8"
+            ap_dict["requires"] = {}
+            ap_dict["requires"]["version"] = "0.6.8"
             ap_dict["Chrono Trigger Rando-Dalton Imperial"] = data_dict
             import yaml
             yaml_data = io.StringIO()
@@ -168,7 +193,6 @@ class TomlGenView(FormView):
                 'error_text': "Unknown file type request"
             }
             return render(self.request, 'generator/toml_form.html', context)
-            # Error
 
         return response
 
