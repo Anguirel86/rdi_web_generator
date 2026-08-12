@@ -93,15 +93,22 @@ class TomlGenView(FormView):
                 result[key] = value
         return result
 
-    def adjust_float_values(self, settings_data):
+    def adjust_float_and_choice_values(self, settings_data):
         """
         Float values need to be multiplied by 100 when converting to yaml.
         AP does not support a float type, so this is a hack to get around that.
+
+        Also adjust choice values to handle the "random"/"rdi_random" issue.
         """
         arg_specs = self.flatten_dict(arguments.Settings.get_argument_spec())
         for flag_name, arg_spec in arg_specs.items():
             if isinstance(arg_spec, argumenttypes.DiscreteNumericalArg) and arg_spec.type_fn is float:
                 settings_data[flag_name] = int(float(settings_data[flag_name]) * 100)
+
+            # "random" is a reserved word in AP choice types. Replace it with our own "rdi_random"
+            # to differentiate.  The apworld will handle translating back as appropriate
+            if isinstance(arg_spec, argumenttypes.DiscreteCategorialArg) and settings_data[flag_name] == "random":
+                settings_data[flag_name] = "rdi_random"
 
     def form_valid(self, form):
 
@@ -171,15 +178,18 @@ class TomlGenView(FormView):
             response = HttpResponse(content, content_type='text/plain')
             response['Content-Disposition'] = 'attachment; filename=settings.toml'
         elif "yaml_gen" in self.request.POST:
+            # Apply settings adjustments to RDI settings play nicely wth AP option types
+            self.adjust_float_and_choice_values(data_dict)
+
             # The user wants a yaml file
             # Add the AP specific fields and format the dictionary for AP
-            self.adjust_float_values(data_dict)
             ap_dict = {}
             ap_dict["name"] = "Player{number}"
             ap_dict["game"] = "Chrono Trigger Rando-Dalton Imperial"
             ap_dict["requires"] = {}
             ap_dict["requires"]["version"] = "0.6.8"
             ap_dict["Chrono Trigger Rando-Dalton Imperial"] = data_dict
+
             import yaml
             yaml_data = io.StringIO()
             yaml.dump(ap_dict, yaml_data, sort_keys=False)
