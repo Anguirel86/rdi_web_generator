@@ -187,7 +187,7 @@ class TomlGenView(FormView):
             ap_dict["name"] = "Player{number}"
             ap_dict["game"] = "Chrono Trigger Rando-Dalton Imperial"
             ap_dict["requires"] = {}
-            ap_dict["requires"]["version"] = "0.6.8"
+            ap_dict["requires"]["version"] = "0.6.7"
             ap_dict["Chrono Trigger Rando-Dalton Imperial"] = data_dict
 
             import yaml
