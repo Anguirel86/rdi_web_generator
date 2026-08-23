@@ -107,8 +107,11 @@ class TomlGenView(FormView):
 
             # "random" is a reserved word in AP choice types. Replace it with our own "rdi_random"
             # to differentiate.  The apworld will handle translating back as appropriate
-            if isinstance(arg_spec, argumenttypes.DiscreteCategorialArg) and settings_data[flag_name] == "random":
-                settings_data[flag_name] = "rdi_random"
+            if isinstance(arg_spec, argumenttypes.DiscreteCategorialArg):
+                if settings_data[flag_name] == "random":
+                    settings_data[flag_name] = "rdi_random"
+                elif settings_data[flag_name] == "...":
+                    settings_data[flag_name] = "char_any"
 
     def form_valid(self, form):
 
