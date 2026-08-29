@@ -113,6 +113,12 @@ class TomlGenView(FormView):
                 elif settings_data[flag_name] == "...":
                     settings_data[flag_name] = "char_any"
 
+                # Sanitize the ending string since AP doesn't like spaces or punctuation in options
+                if flag_name == "ending":
+                    temp = settings_data[flag_name]
+                    temp = temp.replace(" ", "_").replace("?", "")
+                    settings_data[flag_name] = temp
+
     def form_valid(self, form):
 
         data_dict = {}
