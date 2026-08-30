@@ -31,6 +31,14 @@ class TomlFormAutogen():
         # reading in existing toml files. This lets us create a lookup function.
         self.distribution_type_list = []
 
+        # List of all ending name strings
+        # Used to create a lookup function for loading yaml files
+        self.ending_list: list[str] = []
+
+        # List of all flags stored as floats
+        # Used when parsing an AP yaml into the toml form
+        self.float_value_list: list[str] = []
+
         # create the instructions page
         temp = self._write_instructions_tab()
         self.html_buffers['getting_started'] = temp
@@ -105,10 +113,10 @@ class TomlFormAutogen():
               </label>
             </div>
         '''
-        html_buffer.write(toggle_control)
+        _ = html_buffer.write(toggle_control)
 
         default_val = 'true' if spec.default_value else 'false'
-        self.reset_function_buffer.write(
+        _ = self.reset_function_buffer.write(
             f'$("#{{{{form.{flag_name}.id_for_label}}}}").prop("checked", {default_val}).change();\n')
 
     def _create_slider_control(
@@ -165,7 +173,7 @@ class TomlFormAutogen():
         """
         help_text = self.sanitize_string(spec.help_text)
         display_name = self.get_display_name(flag_name)
-        html_buffer.write(f'''
+        _ = html_buffer.write(f'''
             <div class="form-group">
                 <label class="font-weight-bold" for="{{{{form.{flag_name}.id_for_label}}}}">{display_name}:
                   <i class="bi bi-question-circle" data-toggle="tooltip" title="{help_text}"></i>
@@ -175,14 +183,18 @@ class TomlFormAutogen():
         for choice in spec.choices:
             choice_str = spec.str_from_choice_fn(choice)
             selected_string = 'selected' if choice == spec.default_value else ''
-            html_buffer.write(f'    <option value="{choice_str}" {
+            _ = html_buffer.write(f'    <option value="{choice_str}" {
                 selected_string}>{choice_str}</option>\n')
 
-        html_buffer.write('  </select>\n')
-        html_buffer.write('</div>\n')
+        _ = html_buffer.write('  </select>\n')
+        _ = html_buffer.write('</div>\n')
 
-        self.reset_function_buffer.write(
+        _ = self.reset_function_buffer.write(
             f'$("#{{{{form.{flag_name}.id_for_label}}}}").val("{spec.default_value}"); \n')
+
+        if flag_name == "ending":
+            # Save off the ending strings. They are needed for a lookup function later.
+            self.ending_list = spec.choices
 
     def _create_text_control(
             self,
@@ -204,9 +216,9 @@ class TomlFormAutogen():
             </div>
         '''
 
-        html_buffer.write(text_control)
+        _ = html_buffer.write(text_control)
 
-        self.reset_function_buffer.write(
+        _ = self.reset_function_buffer.write(
             f'$("#{{{{form.{flag_name}.id_for_label}}}}").val("{default_value}");\n')
 
     def _create_dist_control(
@@ -388,28 +400,29 @@ class TomlFormAutogen():
         else:
             html_buffer = self.html_buffers[section_name]
 
-        self.pyform_buffer.write(f'\n    # {section_name}\n')
-        self.reset_function_buffer.write(f'\n// {section_name}\n')
+        _ = self.pyform_buffer.write(f'\n    # {section_name}\n')
+        _ = self.reset_function_buffer.write(f'\n// {section_name}\n')
         for flag, spec in arg_spec.items():
             if isinstance(spec, argumenttypes.FlagArg):
-                self.pyform_buffer.write(
+                _ = self.pyform_buffer.write(
                     f'    {flag} = forms.BooleanField(required=False)\n')
                 self._create_toggle_control(flag, spec, html_buffer)
             elif isinstance(spec, argumenttypes.DiscreteNumericalArg):
                 if spec.type_fn is int:
-                    self.pyform_buffer.write(
+                    _ = self.pyform_buffer.write(
                         f'    {flag} = forms.IntegerField(required=False)\n')
                 else:
-                    self.pyform_buffer.write(
+                    _ = self.pyform_buffer.write(
                         f'    {flag} = forms.FloatField(required=False)\n')
+                    self.float_value_list.append(flag)
                 self._create_slider_control(flag, spec, html_buffer)
             elif isinstance(spec, argumenttypes.DiscreteCategorialArg):
                 # TODO: Be smarter about max_length
-                self.pyform_buffer.write(
+                _ = self.pyform_buffer.write(
                     f'    {flag} = forms.CharField(max_length=50, required=False)\n')
-                self._create_choice_control(flag, spec, html_buffer)
+                _ = self._create_choice_control(flag, spec, html_buffer)
             elif isinstance(spec, argumenttypes.MultipleDiscreteSelection):
-                self.pyform_buffer.write(
+                _ = self.pyform_buffer.write(
                     # TODO: Revisit max_length
                     #       Not sure how big these lists can get
                     f'    {flag} = forms.CharField(max_length=5000, required=False)\n')
@@ -437,7 +450,7 @@ class TomlFormAutogen():
         display_name = self.get_display_name(section_name)
 
         active_tab = ' active' if active else ''
-        self.nav_tab_buffer.write(f'  <li class="nav-item"><a class="nav-link{
+        _ = self.nav_tab_buffer.write(f'  <li class="nav-item"><a class="nav-link{
             active_tab}" data-toggle="tab" href="#options-{
             section_name}">{display_name}</a></li>\n')
 
@@ -447,11 +460,62 @@ class TomlFormAutogen():
         autogenerated form pages.
         """
         active_tab = ' active' if active else ''
-        self.tab_page_buffer.write(f'''
+        _ = self.tab_page_buffer.write(f'''
             <div class="tab-pane fade show{active_tab}" id="options-{section_name}">
               {{% include "generator/toml_gen/{section_name}.html" %}}
             </div>
         ''')
+
+    def _get_ending_mapper_fn_buffer(self) -> io.StringIO:
+        """
+        Create a function that performs a lookup from sanitized AP ending option strings
+        to the actual RDI value.
+        """
+        buf = io.StringIO()
+        _ = buf.write('''
+    <script>
+        function getEndingString(ending) {
+            switch (ending) {\n''')
+
+        for ending in self.ending_list:
+            sanitized_str = ending.replace(" ", "_").replace("?", "")
+            _ = buf.write(f'''
+                case "{sanitized_str}":
+                    return "{ending}";\n''')
+
+        _ = buf.write('''
+                default:
+                    // No match found, use a random ending
+                    return "random";
+            }
+        }
+    </script>\n''')
+
+        _ = buf.seek(0)
+        return buf
+
+    def _get_float_value_fn_buffer(self) -> io.StringIO:
+        """
+        Get a function to determine is a flag is stored as a float value.
+        This is needed when parsing an AP yaml.
+        """
+        buf = io.StringIO()
+        _ = buf.write('''
+    <script>
+        function isFloatValue(flag) {
+            const flag_list = [\n''')
+
+        for flag in self.float_value_list:
+            _ = buf.write(f'                "{flag}",\n')
+
+        _ = buf.write('''
+            ];
+            return flag_list.includes(flag);
+        }
+    </script>\n''')
+
+        _ = buf.seek(0)
+        return buf
 
     def _get_distribution_type_fn_buffer(self) -> io.StringIO:
         """
@@ -509,45 +573,53 @@ class TomlFormAutogen():
         Finalize the page buffers and write everything to disk
         """
         # generate the Django form
-        self.pyform_buffer.seek(0)
+        _ = self.pyform_buffer.seek(0)
         os.mkdir('form_gen_output')
         with open('form_gen_output/toml_gen_form.py', 'w') as file:
-            file.write(self.pyform_buffer.read())
+            _ = file.write(self.pyform_buffer.read())
 
         # generate html template pages for each option tab
         os.mkdir('form_gen_output/html')
         for name, buffer in self.html_buffers.items():
-            buffer.seek(0)
+            _ = buffer.seek(0)
             with open(f'form_gen_output/html/{name}.html', 'w') as file:
-                file.write(buffer.read())
+                _ = file.write(buffer.read())
 
         # Generate the nav tabs template
-        self.nav_tab_buffer.seek(0)
+        _ = self.nav_tab_buffer.seek(0)
         with open('form_gen_output/html/settings_nav_tabs.html', 'w') as file:
-            file.write(self.nav_tab_buffer.read())
+            _ = file.write(self.nav_tab_buffer.read())
 
         # generate the tab pages template
-        self.tab_page_buffer.seek(0)
+        _ = self.tab_page_buffer.seek(0)
         with open('form_gen_output/html/settings_tab_pages.html', 'w') as file:
-            file.write(self.tab_page_buffer.read())
+            _ = file.write(self.tab_page_buffer.read())
 
-        self.reset_function_buffer.write('''
+        _ = self.reset_function_buffer.write('''
                 }
             </script>
         ''')
-        self.reset_function_buffer.seek(0)
+        _ = self.reset_function_buffer.seek(0)
         with open('form_gen_output/html/reset_function.html', 'w') as file:
-            file.write(self.reset_function_buffer.read())
+            _ = file.write(self.reset_function_buffer.read())
 
         # Create the lookup function for multiselect lists that
         # allow duplicate item selection
         dup_buffer = self._get_allows_duplicates_fn_buffer()
         with open('form_gen_output/html/allows_duplicates.html', 'w') as file:
-            file.write(dup_buffer.read())
+            _ = file.write(dup_buffer.read())
 
         dist_buffer = self._get_distribution_type_fn_buffer()
         with open("form_gen_output/html/is_distribution.html", "w") as file:
             _ = file.write(dist_buffer.read())
+
+        ending_buffer = self._get_ending_mapper_fn_buffer()
+        with open("form_gen_output/html/ending_mapper.html", "w") as file:
+            _ = file.write(ending_buffer.read())
+
+        float_buffer = self._get_float_value_fn_buffer()
+        with open("form_gen_output/html/is_float_value.html", "w") as file:
+            _ = file.write(float_buffer.read())
 
 
 def main():
