@@ -33,7 +33,7 @@
                         // Handle setting numeric slider flags
                         $('#'+elem_id).val(value).change();
                         $('#'+elem_id+'_text').val(value).change();
-                    } else if (typeof value == "string") {
+                    } else if ((typeof value == "string") || isDistributionType(key)) {
                         // Handle string types - choice selections/text boxes
                         $('#'+elem_id).val(value)
                     } else if(value instanceof Array) {
@@ -331,6 +331,8 @@
 
         <!-- Kind of annoying, but we need a way to look this up for loading tomls -->
         {% include "generator/toml_gen/allows_duplicates.html" %}
+
+        {% include "generator/toml_gen/is_distribution.html" %}
 
     </head>
 

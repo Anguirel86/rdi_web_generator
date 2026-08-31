@@ -26,6 +26,11 @@ class TomlFormAutogen():
         # loading routine.
         self.multi_select_lists_with_dups = []
 
+        # Keep track of which controls are distribution types
+        # These can be formatted such that they confuse the multiselect parsing when
+        # reading in existing toml files. This lets us create a lookup function.
+        self.distribution_type_list = []
+
         # create the instructions page
         temp = self._write_instructions_tab()
         self.html_buffers['getting_started'] = temp
@@ -119,7 +124,7 @@ class TomlFormAutogen():
         display_name = self.get_display_name(flag_name)
         slider_control = f'''
             <div class="form-group my-3">
-              <label class="font-weight-bold" for="{{{{form.{flag_name}.id_for_label}}}}" class="form-label mr-2">{display_name}:
+              <label class="font-weight-bold form-label mr-2" for="{{{{form.{flag_name}.id_for_label}}}}">{display_name}:
                 <i class="bi bi-question-circle" data-toggle="tooltip" title="{help_text}"></i>
               </label>
               <div style="display: flex; gap: 10px; align-items: center;">
@@ -213,6 +218,7 @@ class TomlFormAutogen():
         Generate HTML for a distribution input field
         TODO: For now we're treating these the same as text fields
         """
+        self.distribution_type_list.append(flag_name)
         help_text = self.sanitize_string(spec.help_text)
         display_name = self.get_display_name(flag_name)
         default_value = spec.default_value
@@ -300,7 +306,7 @@ class TomlFormAutogen():
             </label>
             <div class="border rounded mb-4 pl-2 pr-2" style="border: gray;">
                 <div>
-                  <button style="width: 100%;" class="btn ml-auto dropdown-toggle text-right" type="button" data-toggle="collapse" data-target="#collapse-{flag_name}" aria-expanded="false" aria-controls="collapse-{flag_name}">
+                  <button style="width: 100%;" class="btn ml-auto dropdown-toggle text-right" type="button" data-toggle="collapse" data-target="#collapse-{flag_name}" aria-expanded="false" aria-controls="collapse-{flag_name}"></button>
                 </div>
                 <div id="collapse-{flag_name}" class="collapse" data-bs-toggle="collapse" data-bs-target="#collapse-{flag_name}">
                     <div  class="mt-1">
@@ -412,11 +418,11 @@ class TomlFormAutogen():
             elif isinstance(spec, argumenttypes.StringArgument):
                 # TODO: Be smarter about max_length
                 self.pyform_buffer.write(
-                    f'    {flag} = forms.CharField(max_length=500, required=False)\n')
+                    f'    {flag} = forms.CharField(max_length=1500, required=False)\n')
                 self._create_text_control(flag, spec, html_buffer)
             elif isinstance(spec, argumenttypes.DistArgument):
                 self.pyform_buffer.write(
-                    f'    {flag} = forms.CharField(max_length=500, required=False)\n')
+                    f'    {flag} = forms.CharField(max_length=1500, required=False)\n')
                 self._create_dist_control(flag, spec, html_buffer)
             elif isinstance(spec, dict):
                 # This dictionary contains subsections with their own arg specs
@@ -446,6 +452,30 @@ class TomlFormAutogen():
               {{% include "generator/toml_gen/{section_name}.html" %}}
             </div>
         ''')
+
+    def _get_distribution_type_fn_buffer(self) -> io.StringIO:
+        """
+        Create a function to allow the lookup of ditribution types.
+
+        This is needed for the toml parser on the toml gen form.
+        """
+        buf = io.StringIO()
+        _ = buf.write('''
+    <script>
+        function isDistributionType(flag) {
+            const flag_list = [\n''')
+
+        for flag in self.distribution_type_list:
+            _ = buf.write(f'                "{flag}",\n')
+
+        _ = buf.write('''
+            ];
+            return flag_list.includes(flag);
+        }
+    </script>\n''')
+
+        _ = buf.seek(0)
+        return buf
 
     def _get_allows_duplicates_fn_buffer(self) -> io.StringIO:
         """
@@ -514,6 +544,10 @@ class TomlFormAutogen():
         dup_buffer = self._get_allows_duplicates_fn_buffer()
         with open('form_gen_output/html/allows_duplicates.html', 'w') as file:
             file.write(dup_buffer.read())
+
+        dist_buffer = self._get_distribution_type_fn_buffer()
+        with open("form_gen_output/html/is_distribution.html", "w") as file:
+            _ = file.write(dist_buffer.read())
 
 
 def main():
