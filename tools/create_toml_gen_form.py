@@ -190,7 +190,7 @@ class TomlFormAutogen():
         _ = html_buffer.write('</div>\n')
 
         _ = self.reset_function_buffer.write(
-            f'$("#{{{{form.{flag_name}.id_for_label}}}}").val("{spec.default_value}"); \n')
+            f'$("#{{{{form.{flag_name}.id_for_label}}}}").val("{spec.str_from_choice_fn(spec.default_value)}"); \n')
 
         if flag_name == "ending":
             # Save off the ending strings. They are needed for a lookup function later.
