@@ -18,7 +18,21 @@
 
         <script type="module">
             import {parse as parseToml} from 'https://cdn.jsdelivr.net/npm/smol-toml@latest/dist/index.min.js';
-            //import {load as loadYaml} from 'https://cdn.jsdelivr.net/npm/js-yaml@5.4.1/dist/browser/js-yaml.umd.min.js';
+
+            function convertArrayToFormString(array_data) {
+              let form_str = "";
+              let first_item = true;
+              for (const item of array_data) {
+                  if (first_item) {
+                      form_str += item;
+                  } else {
+                      form_str += ", "+ item;
+                  }
+                  first_item = false;
+              }
+
+              return form_str;
+            }
 
             // Populate form fields based on parsed toml data.
             function populateFormFromTomlData(parsed_data, is_yaml = false) {
@@ -51,7 +65,14 @@
                           // Get the real ending name from the sanitized AP version
                           value = getEndingString(value);
                         }
-                        $('#'+elem_id).val(value)
+
+                        if (value instanceof Array) {
+                          // Some distribution types can be arryas
+                          let form_str = convertArrayToFormString(value);
+                          $('#'+elem_id).val("[" + form_str + "]");
+                        } else {
+                          $('#'+elem_id).val(value);
+                        }
                     } else if(value instanceof Array) {
                         // This is one of the list types. Convert the list to
                         // a string before setting the field
