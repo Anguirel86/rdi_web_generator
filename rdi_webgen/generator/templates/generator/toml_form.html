@@ -287,8 +287,6 @@
                                 dest.appendChild(elem);
                             }
                         }
-
-                        updateSelectedList(dest_id, chosen_items_id);
                     });
                 });
 
@@ -315,10 +313,19 @@
                                 dest.appendChild(elem);
                             }
                         }
-
-                        updateSelectedList(dest_id, chosen_items_id);
                     });
                 });
+
+                // Add mutation observer to update the list of selected elements on change
+                const observerCallback = function(mutationsList, observer) {
+                    for (let mutation of mutationsList) {
+                        if (mutation.type == "childList") {
+                            updateSelectedList(dest_id, chosen_items_id);
+                        }
+                    }
+                };
+                const observer = new MutationObserver(observerCallback);
+                observer.observe(dest, {childList: true});
 
                 // Add the filter handler
                 search.addEventListener('input', (event) => {

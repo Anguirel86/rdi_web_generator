@@ -11,7 +11,7 @@ from collections import Counter
 from ctrando.arguments import arguments, argumenttypes
 
 
-class TomlFormAutogen():
+class TomlFormAutogen:
     def __init__(self):
         self.pyform_buffer = self._init_pyform()
         self.nav_tab_buffer = self._init_html_buffer()
@@ -277,7 +277,11 @@ class TomlFormAutogen():
             # If this list allows duplicates then we need to put all
             # choices in the source list
             if spec.allow_duplicates or elem not in spec.default_value:
-                name = spec.str_from_choice_fn(elem)
+                if spec.str_from_choice_fn is not None:
+                    name = spec.str_from_choice_fn(elem)
+                else:
+                    name = str(elem)
+
                 src_elems.write(f'<span id="{flag_name}_{
                     name}" class="movable border border-secondary rounded pl-1 pr-1">{name}</span>\n')
 
@@ -286,7 +290,10 @@ class TomlFormAutogen():
         default_form_data.write('[')
         first_elem = True
         for elem in spec.default_value:
-            name = spec.str_from_choice_fn(elem)
+            if spec.str_from_choice_fn is not None:
+                name = spec.str_from_choice_fn(elem)
+            else:
+                name = str(elem)
             if spec.allow_duplicates:
                 # Get a unique ID for each copy of the item in the chosen list
                 elem_counts.update({name: 1})
