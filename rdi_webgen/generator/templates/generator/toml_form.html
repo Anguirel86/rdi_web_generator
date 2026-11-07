@@ -43,8 +43,16 @@
                     let value = parsed_data[key];
 
                     if (typeof value == "boolean") {
-                        // Handle setting check box flags
-                        $('#'+elem_id).prop('checked', value).change();
+                        if (isRandomFlagArg(key)) {
+                          // RandomFlagArgs are numeric percent args, but true/false are special
+                          // values thar correspond to 100/0 respectively.
+                          const numeric_value = value ? 100 : 0;
+                          $('#'+elem_id).val(numeric_value).change();
+                          $('#'+elem_id+'_text').val(numeric_value).change();
+                        } else {
+                          // Handle setting check box flags
+                          $('#'+elem_id).prop('checked', value).change();
+                        }
                     } else if (typeof value == "number") {
                         // Handle setting numeric slider flags
                         if (is_yaml && isFloatValue(key)) {
@@ -377,7 +385,23 @@
                         }
                     }
                 }
+            }
 
+            /**
+             * Associate a paired slider and textbox with each other to
+             * update one when the other changes.
+             */
+            function addSliderHandler(slider_id, textbox_id) {
+                const slider = document.getElementById(slider_id);
+                const textbox = document.getElementById(textbox_id);
+
+                slider.addEventListener("input", function(event) {
+                    textbox.value = slider.value.toString();
+                });
+
+                textbox.addEventListener("input", function(event) {
+                    slider.value = textbox.value;
+                });
             }
         </script>
 
@@ -394,6 +418,9 @@
 
         <!-- Look up if a value is supposed to be stored as floating point. Used when parsing AP yamls. -->
         {% include "generator/toml_gen/is_float_value.html" %}
+
+        <!-- Look up if a flag is a RandomFlagArg type argument -->
+        {% include "generator/toml_gen/is_random_flag_arg.html" %}
 
     </head>
 
