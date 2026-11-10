@@ -4,7 +4,9 @@ import argparse
 import importlib.resources
 import io
 import os
+import random
 import tempfile
+import tomllib
 import typing
 from wsgiref.util import FileWrapper
 from zipfile import ZipFile
@@ -13,10 +15,10 @@ from zipfile import ZipFile
 import ctrando
 import ctrando.randomizer
 import toml
-import tomllib
 from ctrando.arguments import arguments, argumenttypes, tomloptions
 from ctrando.arguments.plandooptions import PlandoException
 from ctrando.arguments.postrandooptions import PostRandoOptions
+from ctrando.common.random import RNGType
 from django.http import FileResponse, HttpResponse, HttpResponseNotFound
 from django.shortcuts import render
 from django.views import View
@@ -287,7 +289,10 @@ class GenerateView(FormView):
                 settings.post_random_options = personal_settings
             base_rom = ctrando.common.ctrom.CTRom.from_file('./ct.sfc')
             ct_rom = ctrando.randomizer.ctrom.CTRom(base_rom.getvalue())
-            config = ctrando.randomizer.get_random_config(settings, ct_rom)
+            rng: RNGType = random.Random()
+            rng.seed(settings.general_options.seed, version=2)
+            rom_free_config = ctrando.randomizer.get_random_romless_config(settings, rng)
+            config = ctrando.randomizer.get_random_config(settings, rom_free_config, ct_rom, rng)
             out_rom = ctrando.randomizer.get_ctrom_from_config(
                 ct_rom, settings, config, 'post_config.pkl', 'prepatched_rom.pkl')
 
