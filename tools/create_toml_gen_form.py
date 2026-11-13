@@ -39,6 +39,10 @@ class TomlFormAutogen:
         # Used when parsing an AP yaml into the toml form
         self.float_value_list: list[str] = []
 
+        # List of all RandomFlagArg options
+        # These require special handling for true/falst values on the form
+        self.random_flag_list: list[str] = []
+
         # create the instructions page
         temp = self._write_instructions_tab()
         self.html_buffers['getting_started'] = temp
@@ -122,36 +126,32 @@ class TomlFormAutogen:
     def _create_slider_control(
             self,
             flag_name: str,
-            spec: argumenttypes.DiscreteNumericalArg,
+            spec: argumenttypes.DiscreteNumericalArg|argumenttypes.RandomFlagArg,
             html_buffer: io.StringIO):
         """
-        Generate HTML for a slider with the give min/max/interval
+        Generate HTML for a slider for a discrete numeric argument or a random flag argument.
+        min/max/step are defined in the discrete numerical arg spec, but are fixed at 0/100/1 for
+        the random flag argument.
         """
         # The slider and text box should update each other on change
         help_text = self.sanitize_string(spec.help_text)
         display_name = self.get_display_name(flag_name)
+        min_val = spec.min_value if isinstance(spec, argumenttypes.DiscreteNumericalArg) else 0
+        max_val = spec.max_value if isinstance(spec, argumenttypes.DiscreteNumericalArg) else 100
+        step = spec.interval if isinstance(spec, argumenttypes.DiscreteNumericalArg) else 1
         slider_control = f'''
             <div class="form-group my-3">
               <label class="font-weight-bold form-label mr-2" for="{{{{form.{flag_name}.id_for_label}}}}">{display_name}:
                 <i class="bi bi-question-circle" data-toggle="tooltip" title="{help_text}"></i>
               </label>
               <div style="display: flex; gap: 10px; align-items: center;">
-                <input type="range" class="form-range" name="{{{{form.{flag_name}.name}}}}" id="{{{{form.{flag_name}.id_for_label}}}}" min="{spec.min_value}" max="{spec.max_value}" step="{spec.interval}" value="{spec.default_value}">
+                <input type="range" class="form-range" name="{{{{form.{flag_name}.name}}}}" id="{{{{form.{flag_name}.id_for_label}}}}" min="{min_val}" max="{max_val}" step="{step}" value="{spec.default_value}">
                 <input type="text" id="{{{{form.{flag_name}.id_for_label}}}}_text" form="none" size="2" value="{spec.default_value}">
               </div>
             </div>
 
             <script>
-              const slider_{flag_name} = document.getElementById("{{{{form.{flag_name}.id_for_label}}}}");
-              const text_{flag_name} = document.getElementById("{{{{form.{flag_name}.id_for_label}}}}_text");
-
-              slider_{flag_name}.addEventListener("input", function(event) {{
-                text_{flag_name}.value = slider_{flag_name}.value.toString();
-              }});
-
-              text_{flag_name}.addEventListener("input", function(event) {{
-                slider_{flag_name}.value = text_{flag_name}.value;
-              }});
+              addSliderHandler("{{{{form.{flag_name}.id_for_label}}}}", "{{{{form.{flag_name}.id_for_label}}}}_text");
             </script>
             '''
 
@@ -407,48 +407,54 @@ class TomlFormAutogen:
         else:
             html_buffer = self.html_buffers[section_name]
 
-        _ = self.pyform_buffer.write(f'\n    # {section_name}\n')
-        _ = self.reset_function_buffer.write(f'\n// {section_name}\n')
+        _ = self.pyform_buffer.write(f"\n    # {section_name}\n")
+        _ = self.reset_function_buffer.write(f"\n// {section_name}\n")
         for flag, spec in arg_spec.items():
             if isinstance(spec, argumenttypes.FlagArg):
                 _ = self.pyform_buffer.write(
-                    f'    {flag} = forms.BooleanField(required=False)\n')
+                    f"    {flag} = forms.BooleanField(required=False)\n")
                 self._create_toggle_control(flag, spec, html_buffer)
+            elif isinstance(spec, argumenttypes.RandomFlagArg):
+                _ = self.pyform_buffer.write(
+                    f"    {flag} = forms.IntegerField(required=False)\n")
+                self._create_slider_control(flag, spec, html_buffer)
+                self.random_flag_list.append(flag)
             elif isinstance(spec, argumenttypes.DiscreteNumericalArg):
                 if spec.type_fn is int:
                     _ = self.pyform_buffer.write(
-                        f'    {flag} = forms.IntegerField(required=False)\n')
+                        f"    {flag} = forms.IntegerField(required=False)\n")
                 else:
                     _ = self.pyform_buffer.write(
-                        f'    {flag} = forms.FloatField(required=False)\n')
+                        f"    {flag} = forms.FloatField(required=False)\n")
                     self.float_value_list.append(flag)
                 self._create_slider_control(flag, spec, html_buffer)
             elif isinstance(spec, argumenttypes.DiscreteCategorialArg):
                 # TODO: Be smarter about max_length
                 _ = self.pyform_buffer.write(
-                    f'    {flag} = forms.CharField(max_length=50, required=False)\n')
+                    f"    {flag} = forms.CharField(max_length=50, required=False)\n")
                 _ = self._create_choice_control(flag, spec, html_buffer)
             elif isinstance(spec, argumenttypes.MultipleDiscreteSelection):
                 _ = self.pyform_buffer.write(
                     # TODO: Revisit max_length
                     #       Not sure how big these lists can get
-                    f'    {flag} = forms.CharField(max_length=5000, required=False)\n')
+                    f"    {flag} = forms.CharField(max_length=5000, required=False)\n")
                 self._create_multiselect_control(
                     flag, spec, html_buffer)
             elif isinstance(spec, argumenttypes.StringArgument):
                 # TODO: Be smarter about max_length
                 self.pyform_buffer.write(
-                    f'    {flag} = forms.CharField(max_length=1500, required=False)\n')
+                    f"    {flag} = forms.CharField(max_length=1500, required=False)\n")
                 self._create_text_control(flag, spec, html_buffer)
             elif isinstance(spec, argumenttypes.DistArgument):
                 self.pyform_buffer.write(
-                    f'    {flag} = forms.CharField(max_length=1500, required=False)\n')
+                    f"    {flag} = forms.CharField(max_length=1500, required=False)\n")
                 self._create_dist_control(flag, spec, html_buffer)
             elif isinstance(spec, dict):
                 # This dictionary contains subsections with their own arg specs
                 self.generate_form_section(section_name, spec)
             else:
-                print(f'Unknown arg type for {flag}')
+                print(f"Unknown arg type for {flag}")
+                raise TypeError(f"Unknown arg type: {spec.__class__}")
 
     def _write_nav_tab_entry(self, section_name: str, active: bool):
         """
@@ -520,6 +526,29 @@ class TomlFormAutogen:
             return flag_list.includes(flag);
         }
     </script>\n''')
+
+        _ = buf.seek(0)
+        return buf
+
+    def _get_random_flag_list_fn_buffer(self) -> io.StringIO:
+        """
+        Get a function used to determine if an arg is a RandomFlagArg.
+        """
+        buf = io.StringIO()
+        _ = buf.write('''
+    <script>
+        function isRandomFlagArg(flag) {
+            const flag_list = [ \n''')
+
+        for flag in self.random_flag_list:
+            _ = buf.write(f'                "{flag}",\n')
+
+        _ = buf.write('''
+            ];
+            return flag_list.includes(flag);
+        }
+    </script>
+            ''')
 
         _ = buf.seek(0)
         return buf
@@ -627,6 +656,10 @@ class TomlFormAutogen:
         float_buffer = self._get_float_value_fn_buffer()
         with open("form_gen_output/html/is_float_value.html", "w") as file:
             _ = file.write(float_buffer.read())
+
+        random_flag_arg_buffer = self._get_random_flag_list_fn_buffer()
+        with open("form_gen_output/html/is_random_flag_arg.html", "w") as file:
+            _ = file.write(random_flag_arg_buffer.read())
 
 
 def main():
